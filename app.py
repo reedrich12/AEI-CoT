@@ -33,31 +33,38 @@ class DynamicState:
         self.stream_completed = False
         self.in_cot = True
         self.current_language = "en"
+        self.waiting_api = False  # 新增等待状态标志
 
     def control_button_handler(self):
-        """切换流式传输状态"""
-        if self.should_stream:
-            self.should_stream = False
-        else:
+        original_state = self.should_stream
+        self.should_stream = not self.should_stream
+        
+        # 当从暂停->生成时激活等待状态
+        if not original_state and self.should_stream:
+            self.waiting_api = True
             self.stream_completed = False
-            self.should_stream = True
+            
         return self.ui_state_controller()
 
     def ui_state_controller(self):
         """生成动态UI组件状态"""
-        print("UPDATE UI!!")
         # [control_button, thought_editor, reset_button]
         lang_data = LANGUAGE_CONFIG[self.current_language]
         control_value = (
             lang_data["pause_btn"] if self.should_stream else lang_data["generate_btn"]
         )
         control_variant = "secondary" if self.should_stream else "primary"
-        status_suffix = (
-            lang_data["completed"]
-            if self.stream_completed
-            else lang_data["interrupted"]
-        )
+        # 处理等待状态显示
+        if self.waiting_api:
+            status_suffix = lang_data["waiting_api"]
+        else:
+            status_suffix = (
+                lang_data["completed"] 
+                if self.stream_completed 
+                else lang_data["interrupted"]
+            )
         editor_label = f"{lang_data['editor_label']} - {status_suffix}"
+        
         return (
             gr.update(value=control_value, variant=control_variant),
             gr.update(label=editor_label),
@@ -143,6 +150,14 @@ class ConvoState:
         coordinator = CoordinationManager(self.sync_threshold, current_content)
 
         try:
+
+                        # 初始等待状态更新
+            if dynamic_state.waiting_api:
+                status = lang_data["waiting_api"]
+                editor_label = f"{lang_data['editor_label']} - {status}"
+                yield full_response, gr.update(label=editor_label), self.flatten_output()
+
+            coordinator = CoordinationManager(self.sync_threshold, current_content)
             messages = [
                 {"role": "user", "content": user_prompt},
                 {
@@ -166,6 +181,7 @@ class ConvoState:
                     break
 
                 if chunk_content:
+                    dynamic_state.waiting_api = False
                     full_response += chunk_content
                     # Update Convo State
                     think_complete = "</think>" in full_response

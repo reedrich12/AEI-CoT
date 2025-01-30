@@ -33,6 +33,7 @@ LANGUAGE_CONFIG = {
             },
         ],
         "editor_default": "AI thought will start with this, leave blank to think freely",
+        "waiting_api": "⏳ Waiting for Deepseek API response",
     },
     "zh": {
         "title": "CoT-Lab: 人机协同思维实验室\n在一轮对话中跟随、学习、迭代思维链",
@@ -68,5 +69,6 @@ LANGUAGE_CONFIG = {
             {"role": "assistant", "content": "**Shift+Enter** 可以暂停/继续AI生成"},
         ],
         "editor_default": "AI思维会以此开头，留空即为默认思考",
+        "waiting_api": "⏳ 等待Deepseek API响应",
     },
 }

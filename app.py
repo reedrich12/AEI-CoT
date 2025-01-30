@@ -361,14 +361,14 @@ with gr.Blocks(theme=theme, css_paths="styles.css") as demo:
         lambda val, s: setattr(s, "throughput", val),
         [throughput_control, convo_state],
         None,
-        queue=False,
+        concurrency_limit=None,
     )
 
     sync_threshold_slider.change(
         lambda val, s: setattr(s, "sync_threshold", val),
         [sync_threshold_slider, convo_state],
         None,
-        queue=False,
+        concurrency_limit=None,
     )
 
     def wrap_stream_generator(convo_state, dynamic_state, prompt, content):
@@ -383,23 +383,25 @@ with gr.Blocks(theme=theme, css_paths="styles.css") as demo:
         [dynamic_state],
         stateful_ui,
         show_progress=False,
+        concurrency_limit=None,
     ).then(
         wrap_stream_generator,
         [convo_state, dynamic_state, prompt_input, thought_editor],
         [thought_editor, thought_editor, chatbot],
-        concurrency_limit=100,
+        concurrency_limit=1000,
     ).then(
         lambda d: d.ui_state_controller(),
         [dynamic_state],
         stateful_ui,
         show_progress=False,
+        concurrency_limit=None
     )
 
     next_turn_btn.click(
         lambda d: d.reset_workspace(),
         [dynamic_state],
         stateful_ui + (thought_editor, prompt_input, chatbot),
-        queue=False,
+        concurrency_limit=None,
     )
 
     lang_selector.change(
@@ -417,9 +419,9 @@ with gr.Blocks(theme=theme, css_paths="styles.css") as demo:
             intro_md,
             chatbot,
         ],
-        queue=False,
+        concurrency_limit=None,
     )
 
 if __name__ == "__main__":
-    demo.queue(default_concurrency_limit=10000)
+    demo.queue(default_concurrency_limit=1000)
     demo.launch()

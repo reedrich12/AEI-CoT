@@ -29,7 +29,7 @@ LANGUAGE_CONFIG = {
         "bot_default": [
             {
                 "role": "assistant",
-                "content": "Welcome to our co-thinking space! Ready to synchronize our cognitive rhythms? \n Shall we start by adjusting the throughput slider to match your reading pace? \n Enter your task below, edit my thinking process when I pause, and let's begin weaving thoughts together →",
+                "content": "Welcome to our co-thinking space! Ready to synchronize our cognitive rhythms? \n Shall we start by adjusting the throughput slider to match your reading pace? \n Enter your prompt, edit my thinking process when I pause, and let's begin weaving thoughts together →",
             },
         ],
         "editor_default": "AI thought will start with this, leave blank to think freely",
@@ -64,7 +64,7 @@ LANGUAGE_CONFIG = {
         "bot_default": [
             {
                 "role": "assistant",
-                "content": "欢迎来到协同思考空间！准备好同步我们的认知节奏了吗？\n 建议先调整右侧的'同步思考速度'滑块，让它匹配你的阅读速度 \n 在下方输入任务描述，在我暂停时修改我的思维，让我们开始编织思维链条 →",
+                "content": "欢迎来到协同思考空间！准备好同步我们的认知节奏了吗？\n 建议先调整右侧的'同步思考速度'滑块，让它匹配你的阅读速度 \n 在左侧输入任务描述，在我暂停时修改我的思维，让我们开始编织思维链条 →",
             },
             {"role": "assistant", "content": "**Shift+Enter** 可以暂停/继续AI生成"},
         ],

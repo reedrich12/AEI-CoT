@@ -1,0 +1,8 @@
+# Environment files
+.env
+.apikey  # 同时忽略旧密钥文件
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/

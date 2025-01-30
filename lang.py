@@ -4,7 +4,7 @@ LANGUAGE_CONFIG = {
         "title": "CoT-Lab: Human-AI Co-Thinking Laboratory \nFollow, learn, and iterate the thought within one turn.",
         "prompt_label": "Task Description - Prompt",
         "prompt_placeholder": "Enter your prompt here...",
-        "editor_label": "Thinking Process",
+        "editor_label": "Thought Editor",
         "editor_placeholder": "The AI's thinking process will appear here... You can edit when it pauses",
         "generate_btn": "Generate",
         "pause_btn": "Pause",
@@ -25,6 +25,7 @@ LANGUAGE_CONFIG = {
         "api_url_placeholder": "Leave empty for default URL",
         "clear_btn": "Clear Thinking",
         "introduction": "Think together with AI. Use `Shift+Enter` to toggle generation <br>You can modify the thinking process when AI pauses",
+        "bot_label": "Conversation Overview",
         "bot_default": [
     {"role":"assistant","content":"Welcome to our co-thinking space! Ready to synchronize our cognitive rhythms? \n Shall we start by adjusting the throughput slider to match your reading pace? \n Enter your task below, edit my thinking process when I pause, and let's begin weaving thoughts together →"},
 ]
@@ -33,7 +34,7 @@ LANGUAGE_CONFIG = {
         "title": "CoT-Lab: 人机协同思维实验室\n在一轮对话中跟随、学习、迭代思维链",
         "prompt_label": "任务描述 - 提示词",
         "prompt_placeholder": "在此输入您的问题...",
-        "editor_label": "思考过程",
+        "editor_label": "思维编辑器",
         "editor_placeholder": "AI的思考过程将在此显示...您可以在暂停的时候编辑",
         "generate_btn": "生成",
         "pause_btn": "暂停",
@@ -54,8 +55,10 @@ LANGUAGE_CONFIG = {
         "api_url_placeholder": "留空使用默认地址",
         "clear_btn": "清空思考",
         "introduction": "和AI一起思考，Shift+Enter切换生成状态<br>AI暂停的时候你可以编辑思维过程",
+        "bot_label": "对话一览",
         "bot_default": [
     {"role":"assistant","content":"欢迎来到协同思考空间！准备好同步我们的认知节奏了吗？\n 建议先调整右侧的'同步思考速度'滑块，让它匹配你的阅读速度 \n 在下方输入任务描述，在我暂停时修改我的思维，让我们开始编织思维链条 →"},
+     {"role":"assistant","content":"**Shift+Enter** 可以暂停/继续AI生成"},
     ]   
     }
 }

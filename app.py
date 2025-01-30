@@ -187,7 +187,7 @@ def update_interface_language(selected_lang, convo_state, dynamic_state):
         gr.update(label=lang_data["language_label"]),
         gr.update(value=lang_data["clear_btn"], interactive = not dynamic_state.should_stream),
         gr.update(value=lang_data["introduction"]),
-        gr.update(value=lang_data["bot_default"]),
+        gr.update(value=lang_data["bot_default"], label=lang_data["bot_label"]),
     ]
 
 
@@ -216,6 +216,7 @@ with gr.Blocks(theme=theme, css_paths="styles.css") as demo:
                                  group_consecutive_messages=False,
                                  show_copy_all_button=True,
                                  show_share_button=True,
+                                 label=LANGUAGE_CONFIG['en']['bot_label']
                                  )
             prompt_input = gr.Textbox(
                 label=LANGUAGE_CONFIG["en"]["prompt_label"],

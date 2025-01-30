@@ -16,7 +16,7 @@ license: "mit"
 ---
 
 # CoT-Lab: 人机协同思考实验室
-[Huggingface空间 🤗](https://huggingface.co/spaces/Intelligent-Internet/CoT-Lab) | [GitHub仓库 🌐](https://github.com/Intelligent-Internet/CoT-Lab)
+[Huggingface空间 🤗](https://huggingface.co/spaces/Intelligent-Internet/CoT-Lab) | [GitHub仓库 🌐](https://github.com/Intelligent-Internet/CoT-Lab-Demo)
 [English README](README.md)
 
 **通过同步人类与AI的思考过程，实现深层次的认知对齐**
@@ -63,7 +63,7 @@ CoT-Lab是一个探索人机协作新范式的实验性界面，基于**认知�
 
 ```bash
 # 克隆仓库
-git clone https://github.com/Intelligent-Internet/CoT-Lab
+git clone https://github.com/Intelligent-Internet/CoT-Lab-Demo
 cd CoT-Lab
 
 # 安装依赖

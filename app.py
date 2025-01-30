@@ -199,7 +199,7 @@ with gr.Blocks(theme=theme, css_paths="styles.css") as demo:
     dynamic_state = gr.State(DynamicState) # DynamicState is now a separate state
 
     with gr.Row(variant=""):
-        title_md = gr.Markdown(f"## {LANGUAGE_CONFIG['en']['title']}", container=False)
+        title_md = gr.Markdown(f"## {LANGUAGE_CONFIG['en']['title']} \n GitHub: https://github.com/Intelligent-Internet/CoT-Lab-Demo", container=False)
         lang_selector = gr.Dropdown(
             choices=["en", "zh"], 
             value="en",

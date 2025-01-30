@@ -16,7 +16,7 @@ license: "mit"
 ---
 
 # CoT-Lab: Human-AI Co-Thinking Laboratory
-[Huggingface Spaces 🤗](https://huggingface.co/spaces/Intelligent-Internet/CoT-Lab) | [GitHub Repository 🌐](https://github.com/Intelligent-Internet/CoT-Lab)
+[Huggingface Spaces 🤗](https://huggingface.co/spaces/Intelligent-Internet/CoT-Lab) | [GitHub Repository 🌐](https://github.com/Intelligent-Internet/CoT-Lab-Demo)
 [中文README](README_zh.md)
 
 **Sync your thinking with AI reasoning models to achieve deeper cognitive alignment**
@@ -64,7 +64,7 @@ Local deployment is (currently) required if you want to work with locally hosted
 
 ```bash
 # Clone repository
-git clone https://github.com/Intelligent-Internet/CoT-Lab
+git clone https://github.com/Intelligent-Internet/CoT-Lab-Demo
 cd CoT-Lab
 
 # Install dependencies

@@ -1,7 +1,7 @@
 # lang.py
 LANGUAGE_CONFIG = {
     "en": {
-        "title": "CoT-Lab: Human-AI Co-Thinking Laboratory \nFollow, learn, and iterate the thought within one turn.",
+        "title": "CoT-Lab: Human-AI Co-Thinking Laboratory \nFollow, learn, and iterate the thought within one turn. Consider clone the repo and run with your own API key for better experience.",
         "prompt_label": "Task Description - Prompt",
         "prompt_placeholder": "Enter your prompt here...",
         "editor_label": "Thought Editor",
@@ -36,7 +36,7 @@ LANGUAGE_CONFIG = {
         "waiting_api": "⏳ Waiting for Deepseek API response",
     },
     "zh": {
-        "title": "CoT-Lab: 人机协同思维实验室\n在一轮对话中跟随、学习、迭代思维链",
+        "title": "CoT-Lab: 人机协同思维实验室\n在一轮对话中跟随、学习、迭代思维链。克隆Space并使用自己的API KEY可以获得更好的体验。",
         "prompt_label": "任务描述 - 提示词",
         "prompt_placeholder": "在此输入您的问题...",
         "editor_label": "思维编辑器",

@@ -328,7 +328,7 @@ with gr.Blocks(theme=theme, css_paths="styles.css") as demo:
             chatbot = gr.Chatbot(
                 type="messages",
                 height=300,
-                value=LANGUAGE_CONFIG["en"]["bot_default"] + [{"role":"assistant", "content": f"Running `{os.getenv("API_MODEL")}` @ {os.getenv("API_URL")}  \n Responsiveness subjects to API provider situation","metadata": {"title": f"API INFO"},}],
+                value=LANGUAGE_CONFIG["en"]["bot_default"] + [{"role":"assistant", "content": f"Running `{os.getenv('API_MODEL')}` @ {os.getenv('API_URL')}  \n Responsiveness subjects to API provider situation","metadata": {"title": f"API INFO"},}],
                 group_consecutive_messages=False,
                 show_copy_all_button=True,
                 show_share_button=True,

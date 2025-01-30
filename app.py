@@ -46,23 +46,21 @@ class DynamicState:
     def ui_state_controller(self):
         """生成动态UI组件状态"""
         print("UPDATE UI!!")
-        # [control_button, status_indicator,  thought_editor, reset_button]
+        # [control_button, thought_editor, reset_button]
         lang_data = LANGUAGE_CONFIG[self.current_language]
         control_value = (
             lang_data["pause_btn"] if self.should_stream else lang_data["generate_btn"]
         )
         control_variant = "secondary" if self.should_stream else "primary"
-        status_value = (
+        status_suffix = (
             lang_data["completed"]
             if self.stream_completed
             else lang_data["interrupted"]
         )
+        editor_label = f"{lang_data['editor_label']} - {status_suffix}"
         return (
             gr.update(value=control_value, variant=control_variant),
-            gr.update(
-                value=status_value,
-            ),
-            gr.update(),
+            gr.update(label=editor_label),
             gr.update(interactive=not self.should_stream),
         )
 
@@ -186,7 +184,10 @@ class ConvoState:
                         if dynamic_state.in_cot
                         else lang_data["loading_output"]
                     )
-                    yield full_response, status, self.flatten_output()
+                    editor_label = f"{lang_data['editor_label']} - {status}"
+                    yield full_response, gr.update(
+                        label=editor_label
+                    ), self.flatten_output()
 
                     interval = 1.0 / self.throughput
                     start_time = time.time()
@@ -198,7 +199,10 @@ class ConvoState:
         except Exception as e:
             error_msg = LANGUAGE_CONFIG[self.current_language].get("error", "Error")
             full_response += f"\n\n[{error_msg}: {str(e)}]"
-            yield full_response, error_msg, status, self.flatten_output() + [
+            editor_label = f"{lang_data['editor_label']} - {error_msg}"
+            yield full_response, gr.update(
+                label=editor_label
+            ), self.flatten_output() + [
                 {
                     "role": "assistant",
                     "content": error_msg,
@@ -208,11 +212,15 @@ class ConvoState:
 
         finally:
             dynamic_state.should_stream = False
-            if "status" not in locals():
-                status = "Whoops... ERROR"
             if "response_stream" in locals():
                 response_stream.close()
-            yield full_response, status, self.flatten_output()
+            final_status = (
+                lang_data["completed"]
+                if dynamic_state.stream_completed
+                else lang_data["interrupted"]
+            )
+            editor_label = f"{lang_data['editor_label']} - {final_status}"
+            yield full_response, gr.update(label=editor_label), self.flatten_output()
 
 
 def update_interface_language(selected_lang, convo_state, dynamic_state):
@@ -220,14 +228,19 @@ def update_interface_language(selected_lang, convo_state, dynamic_state):
     convo_state.current_language = selected_lang
     dynamic_state.current_language = selected_lang
     lang_data = LANGUAGE_CONFIG[selected_lang]
+    base_editor_label = lang_data["editor_label"]
+    status_suffix = (
+        lang_data["completed"]
+        if dynamic_state.stream_completed
+        else lang_data["interrupted"]
+    )
+    editor_label = f"{base_editor_label} - {status_suffix}"
     return [
         gr.update(value=f"{lang_data['title']}"),
         gr.update(
             label=lang_data["prompt_label"], placeholder=lang_data["prompt_placeholder"]
         ),
-        gr.update(
-            label=lang_data["editor_label"], placeholder=lang_data["editor_placeholder"]
-        ),
+        gr.update(label=editor_label, placeholder=lang_data["editor_placeholder"]),
         gr.update(
             label=lang_data["sync_threshold_label"],
             info=lang_data["sync_threshold_info"],
@@ -256,7 +269,7 @@ theme = gr.themes.Base(font="system-ui", primary_hue="stone")
 
 with gr.Blocks(theme=theme, css_paths="styles.css") as demo:
     convo_state = gr.State(ConvoState)
-    dynamic_state = gr.State(DynamicState)  # DynamicState is now a separate state
+    dynamic_state = gr.State(DynamicState)
 
     with gr.Row(variant=""):
         title_md = gr.Markdown(
@@ -273,14 +286,37 @@ with gr.Blocks(theme=theme, css_paths="styles.css") as demo:
 
     with gr.Row(equal_height=True):
 
-        # 思考编辑面板
         with gr.Column(scale=1, min_width=400):
+            prompt_input = gr.Textbox(
+                label=LANGUAGE_CONFIG["en"]["prompt_label"],
+                lines=2,
+                placeholder=LANGUAGE_CONFIG["en"]["prompt_placeholder"],
+                max_lines=5,
+            )
             thought_editor = gr.Textbox(
-                label=LANGUAGE_CONFIG["en"]["editor_label"],
+                label=f"{LANGUAGE_CONFIG['en']['editor_label']} - {LANGUAGE_CONFIG['en']['editor_default']}",
                 lines=16,
                 placeholder=LANGUAGE_CONFIG["en"]["editor_placeholder"],
                 autofocus=True,
                 elem_id="editor",
+            )
+            with gr.Row():
+                control_button = gr.Button(
+                    value=LANGUAGE_CONFIG["en"]["generate_btn"], variant="primary"
+                )
+                next_turn_btn = gr.Button(
+                    value=LANGUAGE_CONFIG["en"]["clear_btn"], interactive=True
+                )
+
+        with gr.Column(scale=1, min_width=500):
+            chatbot = gr.Chatbot(
+                type="messages",
+                height=300,
+                value=LANGUAGE_CONFIG["en"]["bot_default"],
+                group_consecutive_messages=False,
+                show_copy_all_button=True,
+                show_share_button=True,
+                label=LANGUAGE_CONFIG["en"]["bot_label"],
             )
             with gr.Row():
                 sync_threshold_slider = gr.Slider(
@@ -300,36 +336,10 @@ with gr.Blocks(theme=theme, css_paths="styles.css") as demo:
                     info=LANGUAGE_CONFIG["en"]["throughput_info"],
                 )
 
-        # 对话面板
-        with gr.Column(scale=1, min_width=500):
-            chatbot = gr.Chatbot(
-                type="messages",
-                height=300,
-                value=LANGUAGE_CONFIG["en"]["bot_default"],
-                group_consecutive_messages=False,
-                show_copy_all_button=True,
-                show_share_button=True,
-                label=LANGUAGE_CONFIG["en"]["bot_label"],
-            )
-            prompt_input = gr.Textbox(
-                label=LANGUAGE_CONFIG["en"]["prompt_label"],
-                lines=2,
-                placeholder=LANGUAGE_CONFIG["en"]["prompt_placeholder"],
-                max_lines=5,
-            )
-            with gr.Row():
-                control_button = gr.Button(
-                    value=LANGUAGE_CONFIG["en"]["generate_btn"], variant="primary"
-                )
-                next_turn_btn = gr.Button(
-                    value=LANGUAGE_CONFIG["en"]["clear_btn"], interactive=True
-                )
-            status_indicator = gr.Markdown(AppConfig.LOADING_DEFAULT)
             intro_md = gr.Markdown(LANGUAGE_CONFIG["en"]["introduction"], visible=False)
 
     # 交互逻辑
-
-    stateful_ui = (control_button, status_indicator, thought_editor, next_turn_btn)
+    stateful_ui = (control_button, thought_editor, next_turn_btn)
 
     throughput_control.change(
         lambda val, s: setattr(s, "throughput", val),
@@ -345,43 +355,39 @@ with gr.Blocks(theme=theme, css_paths="styles.css") as demo:
         queue=False,
     )
 
-    def wrap_stream_generator(
-        convo_state, dynamic_state, prompt, content
-    ):  # Pass dynamic_state here
+    def wrap_stream_generator(convo_state, dynamic_state, prompt, content):
         for response in convo_state.generate_ai_response(
             prompt, content, dynamic_state
-        ):  # Pass dynamic_state to generate_ai_response
+        ):
             yield response
 
-    gr.on(  # 主按钮trigger
+    gr.on(
         [control_button.click, prompt_input.submit, thought_editor.submit],
-        lambda d: d.control_button_handler(),  # Pass dynamic_state to control_button_handler
+        lambda d: d.control_button_handler(),
         [dynamic_state],
         stateful_ui,
         show_progress=False,
-    ).then(  # 生成事件
-        wrap_stream_generator,  # Pass both states
+    ).then(
+        wrap_stream_generator,
         [convo_state, dynamic_state, prompt_input, thought_editor],
-        [thought_editor, status_indicator, chatbot],
+        [thought_editor, thought_editor, chatbot],
         concurrency_limit=100,
-    ).then(  # 生成终止后UI状态判断
-        lambda d: d.ui_state_controller(),  # Pass dynamic_state to ui_state_controller
+    ).then(
+        lambda d: d.ui_state_controller(),
         [dynamic_state],
         stateful_ui,
         show_progress=False,
     )
 
     next_turn_btn.click(
-        lambda d: d.reset_workspace(),  # Pass dynamic_state to reset_workspace
+        lambda d: d.reset_workspace(),
         [dynamic_state],
         stateful_ui + (thought_editor, prompt_input, chatbot),
         queue=False,
     )
 
     lang_selector.change(
-        lambda lang, s, d: update_interface_language(
-            lang, s, d
-        ),  # Pass dynamic_state to update_interface_language
+        lambda lang, s, d: update_interface_language(lang, s, d),
         [lang_selector, convo_state, dynamic_state],
         [
             title_md,

@@ -38,12 +38,12 @@ class DynamicState:
     def control_button_handler(self):
         original_state = self.should_stream
         self.should_stream = not self.should_stream
-        
+
         # 当从暂停->生成时激活等待状态
         if not original_state and self.should_stream:
             self.waiting_api = True
             self.stream_completed = False
-            
+
         return self.ui_state_controller()
 
     def ui_state_controller(self):
@@ -59,12 +59,12 @@ class DynamicState:
             status_suffix = lang_data["waiting_api"]
         else:
             status_suffix = (
-                lang_data["completed"] 
-                if self.stream_completed 
+                lang_data["completed"]
+                if self.stream_completed
                 else lang_data["interrupted"]
             )
         editor_label = f"{lang_data['editor_label']} - {status_suffix}"
-        
+
         return (
             gr.update(value=control_value, variant=control_variant),
             gr.update(label=editor_label),
@@ -151,11 +151,13 @@ class ConvoState:
 
         try:
 
-                        # 初始等待状态更新
+            # 初始等待状态更新
             if dynamic_state.waiting_api:
                 status = lang_data["waiting_api"]
                 editor_label = f"{lang_data['editor_label']} - {status}"
-                yield full_response, gr.update(label=editor_label), self.flatten_output()
+                yield full_response, gr.update(
+                    label=editor_label
+                ), self.flatten_output()
 
             coordinator = CoordinationManager(self.sync_threshold, current_content)
             messages = [
@@ -173,7 +175,7 @@ class ConvoState:
                 stream=True,
                 timeout=AppConfig.API_TIMEOUT,
                 top_p=0.95,
-                temperature=0.6
+                temperature=0.6,
             )
             for chunk in response_stream:
                 chunk_content = chunk.choices[0].delta.content
@@ -330,7 +332,14 @@ with gr.Blocks(theme=theme, css_paths="styles.css") as demo:
             chatbot = gr.Chatbot(
                 type="messages",
                 height=300,
-                value=LANGUAGE_CONFIG["en"]["bot_default"] + [{"role":"assistant", "content": f"Running `{os.getenv('API_MODEL')}` @ {os.getenv('API_URL')}  \n Proformance subjects to API provider situation","metadata": {"title": f"API INFO"},}],
+                value=LANGUAGE_CONFIG["en"]["bot_default"]
+                + [
+                    {
+                        "role": "assistant",
+                        "content": f"Running `{os.getenv('API_MODEL')}` @ {os.getenv('API_URL')}  \n Proformance subjects to API provider situation",
+                        "metadata": {"title": f"API INFO"},
+                    }
+                ],
                 group_consecutive_messages=False,
                 show_copy_all_button=True,
                 show_share_button=True,
@@ -396,7 +405,7 @@ with gr.Blocks(theme=theme, css_paths="styles.css") as demo:
         [dynamic_state],
         stateful_ui,
         show_progress=False,
-        concurrency_limit=None
+        concurrency_limit=None,
     )
 
     next_turn_btn.click(

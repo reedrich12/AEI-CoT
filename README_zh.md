@@ -58,6 +58,7 @@ CoT-Lab是一个探索人机协作新范式的实验性界面，基于**认知�
 
 ## 📥 安装部署
 如希望使用本地部署的大语言模型，您（暂时）需要克隆本项目并在本地运行。
+因近期DeepSeek官方API不稳定，我们建议暂时使用第三方API供应商作为替代方案，或者使用本地部署的R1-Distilled模型进行实验。  
 
 **环境要求**：Python 3.11+ | 有效的[Deepseek API密钥](https://platform.deepseek.com/) 或其他OpenAI SDK兼容的API接口。 
 

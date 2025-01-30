@@ -58,7 +58,8 @@ CoT-Lab is an experimental interface exploring new paradigms in human-AI collabo
   Explore hybrid human-AI problem-solving paradiam 
 
 ## 📥 Installation & Deployment
-Local deployment is (currently) required if you want to work with locally hosted LLMs. 
+Local deployment is (currently) required if you want to work with locally hosted LLMs.  
+Due to degraded performance of official DeepSeek API - We recommend seeking alternative API providers, or use locally hosted distilled-R1 for experiment.    
 
 **Prerequisites**: Python 3.11+ | Valid [Deepseek API Key](https://platform.deepseek.com/) or OpenAI SDK compatible API.
 

@@ -19,7 +19,7 @@ license: "mit"
 [Huggingface空间 🤗](https://huggingface.co/spaces/Intelligent-Internet/CoT-Lab) | [GitHub仓库 🌐](https://github.com/Intelligent-Internet/CoT-Lab-Demo)
 [English README](README.md)
 
-**通过同步人类与AI的思考过程，实现深层次的认知对齐**
+**通过同步人类与AI的思考过程，实现深层次的认知对齐**  
 在一轮对话中跟随、学习、迭代思维链
 
 ## 🌟 项目介绍
@@ -59,7 +59,7 @@ CoT-Lab是一个探索人机协作新范式的实验性界面，基于**认知�
 ## 📥 安装部署
 如希望使用本地部署的大语言模型，您（暂时）需要克隆本项目并在本地运行。
 
-**环境要求**：Python 3.11+ | 有效的[Deepseek API密钥](https://platform.deepseek.com/) 或OpenAI chat.completions 接口兼容的API接口。 
+**环境要求**：Python 3.11+ | 有效的[Deepseek API密钥](https://platform.deepseek.com/) 或其他OpenAI SDK兼容的API接口。 
 
 ```bash
 # 克隆仓库
@@ -77,10 +77,6 @@ API_MODEL=deepseek-reasoner
 # 启动应用
 python app.py
 ```
-
-### API服务设置
-可通过环境变量`API_KEY`在前端隐藏密钥。
-目前仅支持OPENAI格式的补全API
 
 ## 📄 许可协议
 MIT License © 2024 [ii.inc]

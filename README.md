@@ -60,7 +60,7 @@ CoT-Lab is an experimental interface exploring new paradigms in human-AI collabo
 ## 📥 Installation & Deployment
 Local deployment is (currently) required if you want to work with locally hosted LLMs. 
 
-**Prerequisites**: Python 3.11+ | Valid [Deepseek API Key](https://platform.deepseek.com/) or OPENAI chat.completions compatible API.
+**Prerequisites**: Python 3.11+ | Valid [Deepseek API Key](https://platform.deepseek.com/) or OpenAI SDK compatible API.
 
 ```bash
 # Clone repository
@@ -79,9 +79,6 @@ API_MODEL=deepseek-reasoner
 python app.py
 ```
 
-### API Settings for serving
-You can set environment variable `API_KEY` to hide the key from frontend.
-Only OPENAI chat.completions compatible API is supported now.
 
 ## 📄 License
 MIT License © 2024 [ii.inc]

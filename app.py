@@ -20,9 +20,7 @@ class AppConfig:
     DEFAULT_THROUGHPUT = 10
     SYNC_THRESHOLD_DEFAULT = 0
     API_TIMEOUT = 20
-    LOADING_DEFAULT = (
-        "✅ Ready! <br> Think together with AI. Use Shift+Enter to toggle generation"
-    )
+
 
 
 class DynamicState:
@@ -185,7 +183,7 @@ class ConvoState:
             )
             for chunk in response_stream:
                 chunk_content = chunk.choices[0].delta.content
-                if coordinator.should_pause_for_human(full_response):
+                if coordinator.should_pause_for_human(full_response) and dynamic_state.in_cot:
                     dynamic_state.should_stream = False
                 if not dynamic_state.should_stream:
                     break
@@ -211,7 +209,7 @@ class ConvoState:
                         else lang_data["loading_output"]
                     )
                     editor_label = f"{lang_data['editor_label']} - {status}"
-                    yield full_response, gr.update(
+                    yield self.current["cot"] + ("</think>" if think_complete else ""), gr.update(
                         label=editor_label
                     ), self.flatten_output()
 
@@ -219,7 +217,7 @@ class ConvoState:
                     start_time = time.time()
                     while (
                         time.time() - start_time
-                    ) < interval and dynamic_state.should_stream:
+                    ) < interval and dynamic_state.should_stream and dynamic_state.in_cot:
                         time.sleep(0.005)
 
         except Exception as e:
@@ -247,9 +245,9 @@ class ConvoState:
             )
             editor_label = f"{lang_data['editor_label']} - {final_status}"
             if not self.is_error:
-                yield full_response, gr.update(label=editor_label), self.flatten_output()
+                yield self.current["cot"] + ("</think>" if not dynamic_state.in_cot else ""), gr.update(label=editor_label), self.flatten_output()
             else:
-                yield full_response, gr.update(label=editor_label_error), self.flatten_output() + [
+                yield self.current["cot"] + ("</think>" if not dynamic_state.in_cot else ""), gr.update(label=editor_label_error), self.flatten_output() + [
                 {
                     "role": "assistant",
                     "content": error_msg,
@@ -311,7 +309,7 @@ with gr.Blocks(theme=theme, css_paths="styles.css") as demo:
     bot_default = LANGUAGE_CONFIG["en"]["bot_default"] + [
                     {
                         "role": "assistant",
-                        "content": f"Running `{os.getenv('API_MODEL')}` @ {os.getenv('API_URL')}  \n Proformance subjects to API provider situation",
+                        "content": f"Running `{os.getenv('API_MODEL')}` @ {os.getenv('API_URL')}  \n Performance subjects to API provider situation",
                         "metadata": {"title": f"API INFO"},
                     }
                 ]

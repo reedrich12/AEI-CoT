@@ -318,7 +318,7 @@ with gr.Blocks(theme=theme, css_paths="styles.css") as demo:
 
     with gr.Row(variant=""):
         title_md = gr.Markdown(
-            f"## {LANGUAGE_CONFIG['en']['title']} \n GitHub: https://github.com/Intelligent-Internet/CoT-Lab-Demo",
+            f"{LANGUAGE_CONFIG['en']['title']} ",
             container=False,
         )
         lang_selector = gr.Dropdown(

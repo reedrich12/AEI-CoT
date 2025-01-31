@@ -75,7 +75,7 @@ class DynamicState:
         self.label_passthrough = False
         return output
     
-    def reset_workspace(self, chatbot_value=None):
+    def reset_workspace(self):
         """重置工作区状态"""
         self.stream_completed = False
         self.should_stream = False
@@ -84,7 +84,7 @@ class DynamicState:
         return self.ui_state_controller() + (
             "",
             "",
-            LANGUAGE_CONFIG["en"]["bot_default"] if chatbot_value is None else chatbot_value,
+            LANGUAGE_CONFIG["en"]["bot_default"],
         )
 
 
@@ -427,7 +427,7 @@ with gr.Blocks(theme=theme, css_paths="styles.css") as demo:
     )
 
     next_turn_btn.click(
-        lambda d: d.reset_workspace(bot_default),
+        lambda d: d.reset_workspace(),
         [dynamic_state],
         stateful_ui + (thought_editor, prompt_input, chatbot),
         concurrency_limit=None,

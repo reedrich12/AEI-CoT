@@ -22,7 +22,6 @@ class AppConfig:
     API_TIMEOUT = 20
 
 
-
 class DynamicState:
     """动态UI状态"""
 
@@ -72,18 +71,19 @@ class DynamicState:
         )
         self.label_passthrough = False
         return output
-    
+
     def reset_workspace(self):
         """重置工作区状态"""
         self.stream_completed = False
         self.should_stream = False
         self.in_cot = True
         self.waiting_api = False
+
         return self.ui_state_controller() + (
             "",
             "",
             LANGUAGE_CONFIG["en"]["bot_default"],
-            DEFAULT_PERSISTENT
+            DEFAULT_PERSISTENT,
         )
 
 
@@ -189,14 +189,17 @@ class ConvoState:
             )
             for chunk in response_stream:
                 chunk_content = chunk.choices[0].delta.content
-                if coordinator.should_pause_for_human(full_response) and dynamic_state.in_cot:
+                if (
+                    coordinator.should_pause_for_human(full_response)
+                    and dynamic_state.in_cot
+                ):
                     dynamic_state.should_stream = False
                 if not dynamic_state.should_stream:
                     break
 
                 if chunk_content:
                     dynamic_state.waiting_api = False
-                    full_response += chunk_content.replace("<think>","")
+                    full_response += chunk_content.replace("<think>", "")
                     self.current["raw"] = full_response
                     # Update Convo State
                     think_complete = "</think>" in full_response
@@ -219,7 +222,9 @@ class ConvoState:
                     if self.result_editing_toggle:
                         editor_output = full_response
                     else:
-                        editor_output = self.current["cot"]  + ("</think>" if think_complete else "")
+                        editor_output = self.current["cot"] + (
+                            "</think>" if think_complete else ""
+                        )
                     yield editor_output, gr.update(
                         label=editor_label
                     ), self.flatten_output()
@@ -227,13 +232,15 @@ class ConvoState:
                     interval = 1.0 / self.throughput
                     start_time = time.time()
                     while (
-                        time.time() - start_time
-                    ) < interval and dynamic_state.should_stream and dynamic_state.in_cot:
+                        (time.time() - start_time) < interval
+                        and dynamic_state.should_stream
+                        and dynamic_state.in_cot
+                    ):
                         time.sleep(0.005)
 
         except Exception as e:
             if str(e) == "list index out of range":
-                dynamic_state.stream_completed = True                
+                dynamic_state.stream_completed = True
             else:
                 if str(e) == "The read operation timed out":
                     error_msg = lang_data["api_interrupted"]
@@ -243,7 +250,6 @@ class ConvoState:
                 editor_label_error = f"{lang_data['editor_label']} - {error_msg}"
                 self.is_error = True
                 dynamic_state.label_passthrough = True
-
 
         finally:
             dynamic_state.should_stream = False
@@ -256,17 +262,20 @@ class ConvoState:
             )
             editor_label = f"{lang_data['editor_label']} - {final_status}"
             if not self.is_error:
-                yield editor_output, gr.update(label=editor_label), self.flatten_output()
+                yield editor_output, gr.update(
+                    label=editor_label
+                ), self.flatten_output()
             else:
-                yield editor_output, gr.update(label=editor_label_error), self.flatten_output() + [
-                {
-                    "role": "assistant",
-                    "content": error_msg,
-                    "metadata": {"title": f"❌Error"},
-                }
-            ]
-            self.is_error =  False
-            
+                yield editor_output, gr.update(
+                    label=editor_label_error
+                ), self.flatten_output() + [
+                    {
+                        "role": "assistant",
+                        "content": error_msg,
+                        "metadata": {"title": f"❌Error"},
+                    }
+                ]
+            self.is_error = False
 
 
 def update_interface_language(selected_lang, convo_state, dynamic_state):
@@ -315,18 +324,18 @@ def update_interface_language(selected_lang, convo_state, dynamic_state):
 theme = gr.themes.Base(font="system-ui", primary_hue="stone")
 
 with gr.Blocks(theme=theme, css_paths="styles.css") as demo:
-    DEFAULT_PERSISTENT = {"prompt_input":"", "thought_editor":""}
+    DEFAULT_PERSISTENT = {"prompt_input": "", "thought_editor": ""}
     convo_state = gr.State(ConvoState)
     dynamic_state = gr.State(DynamicState)
     persistent_state = gr.BrowserState(DEFAULT_PERSISTENT)
 
     bot_default = LANGUAGE_CONFIG["en"]["bot_default"] + [
-                    {
-                        "role": "assistant",
-                        "content": f"Running `{os.getenv('API_MODEL')}` @ {os.getenv('API_URL')}  \n Performance subjects to API provider situation",
-                        "metadata": {"title": f"API INFO"},
-                    }
-                ]
+        {
+            "role": "assistant",
+            "content": f"Running `{os.getenv('API_MODEL')}` @ {os.getenv('API_URL')}  \n Performance subjects to API provider situation",
+            "metadata": {"title": f"API INFO"},
+        }
+    ]
 
     with gr.Row(variant=""):
         title_md = gr.Markdown(
@@ -340,7 +349,6 @@ with gr.Blocks(theme=theme, css_paths="styles.css") as demo:
             scale=0,
             container=False,
         )
-
 
     with gr.Row(equal_height=True):
         with gr.Column(scale=1, min_width=400):
@@ -393,17 +401,21 @@ with gr.Blocks(theme=theme, css_paths="styles.css") as demo:
                     label=LANGUAGE_CONFIG["en"]["throughput_label"],
                     info=LANGUAGE_CONFIG["en"]["throughput_info"],
                 )
-            result_editing_toggle = gr.Checkbox(label=LANGUAGE_CONFIG["en"]["result_editing_toggle"], interactive=True, scale=0, container=False)
+            result_editing_toggle = gr.Checkbox(
+                label=LANGUAGE_CONFIG["en"]["result_editing_toggle"],
+                interactive=True,
+                scale=0,
+                container=False,
+            )
 
             intro_md = gr.Markdown(LANGUAGE_CONFIG["en"]["introduction"], visible=False)
-    
+
     @demo.load(inputs=[persistent_state], outputs=[prompt_input, thought_editor])
     def recover_persistent_state(persistant_state):
         if persistant_state["prompt_input"] or persistant_state["thought_editor"]:
             return persistant_state["prompt_input"], persistant_state["thought_editor"]
         else:
             return gr.update(), gr.update()
-
 
     # 交互逻辑
     stateful_ui = (control_button, thought_editor, next_turn_btn)
@@ -426,7 +438,12 @@ with gr.Blocks(theme=theme, css_paths="styles.css") as demo:
         for response in convo_state.generate_ai_response(
             prompt, content, dynamic_state
         ):
-            yield response + ({"prompt_input": convo_state.current["user"], "thought_editor":convo_state.current["cot"]},)
+            yield response + (
+                {
+                    "prompt_input": convo_state.current["user"],
+                    "thought_editor": convo_state.current["cot"],
+                },
+            )
 
     gr.on(
         [control_button.click, prompt_input.submit, thought_editor.submit],
@@ -453,24 +470,20 @@ with gr.Blocks(theme=theme, css_paths="styles.css") as demo:
         [dynamic_state],
         stateful_ui + (thought_editor, prompt_input, chatbot, persistent_state),
         concurrency_limit=None,
-        show_progress=False
+        show_progress=False,
     )
 
     def toggle_editor_result(convo_state, allow):
         setattr(convo_state, "result_editing_toggle", allow)
         if allow:
-            print(convo_state.current["raw"])
             return gr.update(value=convo_state.current["raw"])
         else:
-            print(convo_state.current["cot"])
             return gr.update(value=convo_state.current["cot"])
-
-
 
     result_editing_toggle.change(
         toggle_editor_result,
         inputs=[convo_state, result_editing_toggle],
-        outputs=[thought_editor]
+        outputs=[thought_editor],
     )
 
     lang_selector.change(
@@ -487,7 +500,7 @@ with gr.Blocks(theme=theme, css_paths="styles.css") as demo:
             next_turn_btn,
             intro_md,
             chatbot,
-            result_editing_toggle
+            result_editing_toggle,
         ],
         concurrency_limit=None,
     )

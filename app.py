@@ -9,6 +9,9 @@ from lang import LANGUAGE_CONFIG
 # 环境变量预校验
 load_dotenv(override=True)
 required_env_vars = ["API_KEY", "API_URL", "API_MODEL"]
+secondary_api_exists = all(
+    os.getenv(f"{var}_2") for var in ["API_KEY", "API_URL", "API_MODEL"]
+)
 missing_vars = [var for var in required_env_vars if not os.getenv(var)]
 if missing_vars:
     raise EnvironmentError(
@@ -121,6 +124,14 @@ class ConvoState:
         self.is_error = False
         self.result_editing_toggle = False
 
+    def get_api_config(self, language):
+        suffix = "_2" if language == "zh" and secondary_api_exists else ""
+        return {
+            "key": os.getenv(f"API_KEY{suffix}"),
+            "url": os.getenv(f"API_URL{suffix}"),
+            "model": os.getenv(f"API_MODEL{suffix}"),
+        }
+
     def initialize_new_round(self):
         self.current = {}
         self.current["user"] = ""
@@ -150,11 +161,13 @@ class ConvoState:
         dynamic_state.stream_completed = False
         full_response = current_content
         self.current["raw"] = full_response
+        api_config = self.get_api_config(self.current_language)
         api_client = OpenAI(
-            api_key=os.getenv("API_KEY"),
-            base_url=os.getenv("API_URL"),
+            api_key=api_config["key"],
+            base_url=api_config["url"],
             timeout=AppConfig.API_TIMEOUT,
         )
+
         coordinator = CoordinationManager(self.sync_threshold, current_content)
 
         editor_output = current_content
@@ -290,6 +303,14 @@ def update_interface_language(selected_lang, convo_state, dynamic_state):
         else lang_data["interrupted"]
     )
     editor_label = f"{base_editor_label} - {status_suffix}"
+    api_config = convo_state.get_api_config(selected_lang)
+    new_bot_content = [
+        {
+            "role": "assistant",
+            "content": f"{selected_lang} - Running `{api_config['model']}` @ {api_config['url']}",
+            "metadata": {"title": f"API INFO"},
+        }
+    ]
     return [
         gr.update(value=f"{lang_data['title']}"),
         gr.update(
@@ -316,7 +337,10 @@ def update_interface_language(selected_lang, convo_state, dynamic_state):
             value=lang_data["clear_btn"], interactive=not dynamic_state.should_stream
         ),
         gr.update(value=lang_data["introduction"]),
-        gr.update(value=lang_data["bot_default"], label=lang_data["bot_label"]),
+        gr.update(
+            value=lang_data["bot_default"] + new_bot_content,
+            label=lang_data["bot_label"],
+        ),
         gr.update(label=lang_data["result_editing_toggle"]),
     ]
 
@@ -332,10 +356,18 @@ with gr.Blocks(theme=theme, css_paths="styles.css") as demo:
     bot_default = LANGUAGE_CONFIG["en"]["bot_default"] + [
         {
             "role": "assistant",
-            "content": f"Running `{os.getenv('API_MODEL')}` @ {os.getenv('API_URL')}  \n Performance subjects to API provider situation",
-            "metadata": {"title": f"API INFO"},
+            "content": f"Running `{os.getenv('API_MODEL')}` @ {os.getenv('API_URL')}",
+            "metadata": {"title": f"EN API INFO"},
         }
     ]
+    if secondary_api_exists:
+        bot_default.append(
+            {
+                "role": "assistant",
+                "content": f"Switch to zh ↗ to use SiliconFlow API: `{os.getenv('API_MODEL_2')}` @ {os.getenv('API_URL_2')}",
+                "metadata": {"title": f"CN API INFO"},
+            }
+        )
 
     with gr.Row(variant=""):
         title_md = gr.Markdown(

@@ -83,6 +83,7 @@ class DynamicState:
             "",
             "",
             LANGUAGE_CONFIG["en"]["bot_default"],
+            DEFAULT_PERSISTENT
         )
 
 
@@ -303,8 +304,10 @@ def update_interface_language(selected_lang, convo_state, dynamic_state):
 theme = gr.themes.Base(font="system-ui", primary_hue="stone")
 
 with gr.Blocks(theme=theme, css_paths="styles.css") as demo:
+    DEFAULT_PERSISTENT = {"prompt_input":"", "thought_editor":""}
     convo_state = gr.State(ConvoState)
     dynamic_state = gr.State(DynamicState)
+    persistent_state = gr.BrowserState(DEFAULT_PERSISTENT)
 
     bot_default = LANGUAGE_CONFIG["en"]["bot_default"] + [
                     {
@@ -380,6 +383,14 @@ with gr.Blocks(theme=theme, css_paths="styles.css") as demo:
                 )
 
             intro_md = gr.Markdown(LANGUAGE_CONFIG["en"]["introduction"], visible=False)
+    
+    @demo.load(inputs=[persistent_state], outputs=[prompt_input, thought_editor])
+    def recover_persistent_state(persistant_state):
+        if persistant_state["prompt_input"] or persistant_state["thought_editor"]:
+            return persistant_state["prompt_input"], persistant_state["thought_editor"]
+        else:
+            return gr.update(), gr.update()
+
 
     # 交互逻辑
     stateful_ui = (control_button, thought_editor, next_turn_btn)
@@ -402,7 +413,8 @@ with gr.Blocks(theme=theme, css_paths="styles.css") as demo:
         for response in convo_state.generate_ai_response(
             prompt, content, dynamic_state
         ):
-            yield response
+            print(response)
+            yield response + ({"prompt_input": convo_state.current["user"], "thought_editor":convo_state.current["cot"]},)
 
     gr.on(
         [control_button.click, prompt_input.submit, thought_editor.submit],
@@ -414,7 +426,7 @@ with gr.Blocks(theme=theme, css_paths="styles.css") as demo:
     ).then(
         wrap_stream_generator,
         [convo_state, dynamic_state, prompt_input, thought_editor],
-        [thought_editor, thought_editor, chatbot],
+        [thought_editor, thought_editor, chatbot, persistent_state],
         concurrency_limit=1000,
     ).then(
         lambda d: d.ui_state_controller(),
@@ -427,7 +439,7 @@ with gr.Blocks(theme=theme, css_paths="styles.css") as demo:
     next_turn_btn.click(
         lambda d: d.reset_workspace(),
         [dynamic_state],
-        stateful_ui + (thought_editor, prompt_input, chatbot),
+        stateful_ui + (thought_editor, prompt_input, chatbot, persistent_state),
         concurrency_limit=None,
         show_progress=False
     )

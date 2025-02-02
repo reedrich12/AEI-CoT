@@ -196,7 +196,7 @@ class ConvoState:
 
                 if chunk_content:
                     dynamic_state.waiting_api = False
-                    full_response += chunk_content
+                    full_response += chunk_content.replace("<think>","")
                     self.current["raw"] = full_response
                     # Update Convo State
                     think_complete = "</think>" in full_response

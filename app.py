@@ -123,6 +123,8 @@ class ConvoState:
         self.initialize_new_round()
         self.is_error = False
         self.result_editing_toggle = False
+        self.is_seperate_reasoning = False
+        self.in_seperate_reasoning = False
 
     def get_api_config(self, language):
         suffix = "_2" if language == "zh" and secondary_api_exists else ""
@@ -201,7 +203,18 @@ class ConvoState:
                 temperature=0.6,
             )
             for chunk in response_stream:
-                chunk_content = chunk.choices[0].delta.content
+                print(chunk)
+                chunk_content = ""
+                if hasattr(chunk.choices[0].delta, "reasoning_content") and chunk.choices[0].delta.reasoning_content:
+                        chunk_content = chunk.choices[0].delta.reasoning_content
+                        self.is_seperate_reasoning = True
+                        self.in_seperate_reasoning = True
+
+                elif chunk.choices[0].delta.content:
+                        chunk_content = chunk.choices[0].delta.content
+                        if self.in_seperate_reasoning:
+                            chunk_content ="</think>" + chunk_content
+                        self.in_seperate_reasoning = False
                 if (
                     coordinator.should_pause_for_human(full_response)
                     and dynamic_state.in_cot

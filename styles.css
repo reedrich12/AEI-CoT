@@ -1,1 +1,82 @@
+/* AEI Brand Colors */
+:root {
+    --aei-red: #c41e3a;
+    --aei-blue: #0066cc;
+    --aei-dark: #1a1a1a;
+    --aei-light-gray: #f0f0f0;
+}
+
+/* Hide Gradio footer */
 footer{display:none !important}
+
+/* AEI Branding Styles */
+.gradio-container {
+    font-family: 'Arial', 'Helvetica', sans-serif !important;
+}
+
+/* Style the main title */
+h2 {
+    color: var(--aei-dark) !important;
+    border-bottom: 3px solid var(--aei-blue);
+    padding-bottom: 10px;
+}
+
+/* Primary buttons with AEI blue */
+.primary {
+    background-color: var(--aei-blue) !important;
+    border-color: var(--aei-blue) !important;
+}
+
+.primary:hover {
+    background-color: #0052a3 !important;
+    border-color: #0052a3 !important;
+}
+
+/* Secondary buttons with AEI red */
+.secondary {
+    background-color: var(--aei-red) !important;
+    border-color: var(--aei-red) !important;
+    color: white !important;
+}
+
+.secondary:hover {
+    background-color: #a01729 !important;
+    border-color: #a01729 !important;
+}
+
+/* Textbox focus states */
+.textbox:focus, .textarea:focus {
+    border-color: var(--aei-blue) !important;
+    box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1) !important;
+}
+
+/* Slider styling */
+input[type="range"]::-webkit-slider-thumb {
+    background-color: var(--aei-blue) !important;
+}
+
+input[type="range"]::-moz-range-thumb {
+    background-color: var(--aei-blue) !important;
+}
+
+/* Dropdown styling */
+#compact_lang_selector {
+    border-color: var(--aei-blue) !important;
+}
+
+/* Add AEI logo styling */
+.aei-logo {
+    width: 60px;
+    height: 60px;
+    margin-right: 15px;
+}
+
+/* Header styling */
+.main-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 20px;
+    background: linear-gradient(to right, rgba(196, 30, 58, 0.05), rgba(0, 102, 204, 0.05));
+    border-radius: 10px;
+}

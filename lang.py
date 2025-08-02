@@ -1,11 +1,11 @@
 # lang.py
 LANGUAGE_CONFIG = {
     "en": {
-        "title": "## CoT-Lab: Human-AI Co-Thinking Laboratory \nFollow, learn, and iterate the thought within one turn. Consider clone the repo and run with your own API key for better experience.  \n GitHub: https://github.com/Intelligent-Internet/CoT-Lab-Demo",
-        "prompt_label": "Task Description - Prompt",
-        "prompt_placeholder": "Enter your prompt here...",
-        "editor_label": "Thought Editor",
-        "editor_placeholder": "The AI's thinking process will appear here... You can edit when it pauses",
+        "title": "## AEI CoT-Lab: AI-Enhanced Learning Laboratory \n**American Education Institute** - Empowering Education Through AI Innovation  \nSynchronize your thinking with advanced AI reasoning for deeper learning outcomes",
+        "prompt_label": "Learning Objective",
+        "prompt_placeholder": "Enter your learning question or educational goal...",
+        "editor_label": "AEI Collaborative Thinking Space",
+        "editor_placeholder": "The AI tutor's reasoning will appear here... Edit to guide the learning process",
         "generate_btn": "Generate",
         "pause_btn": "Pause",
         "sync_threshold_label": "🧠 Human Thinking Cadence",
@@ -29,7 +29,7 @@ LANGUAGE_CONFIG = {
         "bot_default": [
             {
                 "role": "assistant",
-                "content": "Welcome to our co-thinking space! Ready to synchronize our cognitive rhythms? \n Shall we start by adjusting the throughput slider to match your reading pace? \n Enter your prompt, edit my thinking process when I pause, and let's begin weaving thoughts together →",
+                "content": "Welcome to the **American Education Institute's AI-Enhanced Learning Laboratory**! \n\nI'm your AEI AI tutor, ready to guide you through personalized learning experiences. \n\n📚 Adjust the thinking speed to match your learning pace, then share your educational goals. Together, we'll explore concepts deeply and build understanding step by step.",
             },
         ],
         "editor_default": "AI thought will start with this, leave blank to think freely",
@@ -40,11 +40,11 @@ LANGUAGE_CONFIG = {
 
     },
     "zh": {
-        "title": "## CoT-Lab: 人机协同思维实验室\n在一轮对话中跟随、学习、迭代思维链。克隆Space并使用自己的API KEY可以获得更好的体验。  \n GitHub: https://github.com/Intelligent-Internet/CoT-Lab-Demo",
-        "prompt_label": "任务描述 - 提示词",
-        "prompt_placeholder": "在此输入您的问题...",
-        "editor_label": "思维编辑器",
-        "editor_placeholder": "AI的思考过程将在此显示...您可以在暂停的时候编辑",
+        "title": "## AEI CoT-Lab: AI增强学习实验室\n**美国教育学院** - 通过AI创新赋能教育  \n与先进的AI推理同步思考，实现更深层次的学习成果",
+        "prompt_label": "学习目标",
+        "prompt_placeholder": "输入您的学习问题或教育目标...",
+        "editor_label": "AEI协作思考空间",
+        "editor_placeholder": "AI导师的推理过程将在此显示...编辑以引导学习过程",
         "generate_btn": "生成",
         "pause_btn": "暂停",
         "sync_threshold_label": "🧠 人类思考间隔",
@@ -68,9 +68,8 @@ LANGUAGE_CONFIG = {
         "bot_default": [
             {
                 "role": "assistant",
-                "content": "欢迎来到协同思考空间！准备好同步我们的认知节奏了吗？\n 建议先调整右侧的'同步思考速度'滑块，让它匹配你的阅读速度 \n 在左侧输入任务描述，在我暂停时修改我的思维，让我们开始编织思维链条 →",
+                "content": "欢迎来到**美国教育学院的AI增强学习实验室**！\n\n我是您的AEI AI导师，准备引导您完成个性化的学习体验。\n\n📚 调整思考速度以匹配您的学习节奏，然后分享您的教育目标。我们将一起深入探索概念，逐步建立理解。",
             },
-            {"role": "assistant", "content": "**Shift+Enter** 可以暂停/继续AI生成"},
         ],
         "editor_default": "AI思维会以此开头，留空即为默认思考",
         "waiting_api": "⏳ 等待API响应",

@@ -1,0 +1,44 @@
+<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="400" height="400" fill="white"/>
+  
+  <!-- Grid lines (optional - remove these if you don't want visible borders) -->
+  <line x1="200" y1="0" x2="200" y2="400" stroke="#f0f0f0" stroke-width="1"/>
+  <line x1="0" y1="200" x2="400" y2="200" stroke="#f0f0f0" stroke-width="1"/>
+  
+  <!-- Top Left: A -->
+  <text x="100" y="140" font-family="Arial, Helvetica, sans-serif" font-size="120" font-weight="bold" text-anchor="middle" fill="#1a1a1a">
+    A
+  </text>
+  
+  <!-- Top Right: E -->
+  <text x="300" y="140" font-family="Arial, Helvetica, sans-serif" font-size="120" font-weight="bold" text-anchor="middle" fill="#1a1a1a">
+    E
+  </text>
+  
+  <!-- Bottom Left: Logo bars with stars -->
+  <g transform="translate(100, 300)">
+    <!-- Red bar -->
+    <rect x="-60" y="-50" width="120" height="20" fill="#c41e3a"/>
+    
+    <!-- Stars in white space -->
+    <g fill="#1a1a1a">
+      <!-- Star 1 -->
+      <path d="M-45,-25 L-43,-20 L-38,-20 L-42,-17 L-40,-12 L-45,-15 L-50,-12 L-48,-17 L-52,-20 L-47,-20 Z" />
+      <!-- Star 2 -->
+      <path d="M-15,-25 L-13,-20 L-8,-20 L-12,-17 L-10,-12 L-15,-15 L-20,-12 L-18,-17 L-22,-20 L-17,-20 Z" />
+      <!-- Star 3 -->
+      <path d="M15,-25 L17,-20 L22,-20 L18,-17 L20,-12 L15,-15 L10,-12 L12,-17 L8,-20 L13,-20 Z" />
+      <!-- Star 4 -->
+      <path d="M45,-25 L47,-20 L52,-20 L48,-17 L50,-12 L45,-15 L40,-12 L42,-17 L38,-20 L43,-20 Z" />
+    </g>
+    
+    <!-- Blue bar -->
+    <rect x="-60" y="0" width="120" height="20" fill="#0066cc"/>
+  </g>
+  
+  <!-- Bottom Right: I -->
+  <text x="300" y="340" font-family="Arial, Helvetica, sans-serif" font-size="120" font-weight="bold" text-anchor="middle" fill="#1a1a1a">
+    I
+  </text>
+</svg>

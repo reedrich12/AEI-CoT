@@ -320,8 +320,8 @@ def update_interface_language(selected_lang, convo_state, dynamic_state):
     new_bot_content = [
         {
             "role": "assistant",
-            "content": f"{selected_lang} - Running `{api_config['model']}` @ {api_config['url']}",
-            "metadata": {"title": f"API INFO"},
+            "content": f"🔧 System: Running `{api_config['model']}` @ {api_config['url']}",
+            "metadata": {"title": f"AEI System Info"},
         }
     ]
     return [
@@ -358,9 +358,13 @@ def update_interface_language(selected_lang, convo_state, dynamic_state):
     ]
 
 
-theme = gr.themes.Base(font="system-ui", primary_hue="stone")
+theme = gr.themes.Base(
+    font="Arial, Helvetica, sans-serif",
+    primary_hue="blue",
+    secondary_hue="red"
+)
 
-with gr.Blocks(theme=theme, css_paths="styles.css") as demo:
+with gr.Blocks(theme=theme, css_paths="styles.css", title="AEI CoT-Lab") as demo:
     DEFAULT_PERSISTENT = {"prompt_input": "", "thought_editor": ""}
     convo_state = gr.State(ConvoState)
     dynamic_state = gr.State(DynamicState)
@@ -369,24 +373,31 @@ with gr.Blocks(theme=theme, css_paths="styles.css") as demo:
     bot_default = LANGUAGE_CONFIG["en"]["bot_default"] + [
         {
             "role": "assistant",
-            "content": f"Running `{os.getenv('API_MODEL')}` @ {os.getenv('API_URL')}",
-            "metadata": {"title": f"EN API INFO"},
+            "content": f"🔧 System: Running `{os.getenv('API_MODEL')}` @ {os.getenv('API_URL')}",
+            "metadata": {"title": f"AEI System Info"},
         }
     ]
     if secondary_api_exists:
         bot_default.append(
             {
                 "role": "assistant",
-                "content": f"Switch to zh ↗ to use SiliconFlow API: `{os.getenv('API_MODEL_2')}` @ {os.getenv('API_URL_2')}",
-                "metadata": {"title": f"CN API INFO"},
+                "content": f"Switch to Chinese (zh) for alternative API: `{os.getenv('API_MODEL_2')}`",
+                "metadata": {"title": f"Language Options"},
             }
         )
-
-    with gr.Row(variant=""):
+    
+    # Add AEI logo and header
+    with gr.Row(elem_classes="main-header"):
+        gr.HTML("""
+            <div style="display: flex; align-items: center; width: 100%;">
+                <img src="file/aei-logo.svg" class="aei-logo" alt="AEI Logo" style="width: 80px; height: 80px; margin-right: 20px;">
+                <div style="flex-grow: 1;">
+        """)
         title_md = gr.Markdown(
-            f"{LANGUAGE_CONFIG['en']['title']} ",
+            f"{LANGUAGE_CONFIG['en']['title']}",
             container=False,
         )
+        gr.HTML("</div>")
         lang_selector = gr.Dropdown(
             choices=["en", "zh"],
             value="en",
@@ -394,6 +405,7 @@ with gr.Blocks(theme=theme, css_paths="styles.css") as demo:
             scale=0,
             container=False,
         )
+        gr.HTML("</div>")
 
     with gr.Row(equal_height=True):
         with gr.Column(scale=1, min_width=400):

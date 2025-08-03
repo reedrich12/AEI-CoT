@@ -4,79 +4,169 @@
     --aei-blue: #0066cc;
     --aei-dark: #1a1a1a;
     --aei-light-gray: #f0f0f0;
+    --aei-white: #ffffff;
 }
 
 /* Hide Gradio footer */
-footer{display:none !important}
+footer {
+    display: none !important;
+}
 
-/* AEI Branding Styles */
-.gradio-container {
-    font-family: 'Arial', 'Helvetica', sans-serif !important;
+/* Force white background on everything */
+body, 
+.gradio-container,
+.app,
+.dark,
+main,
+.main,
+.wrap {
+    background-color: white !important;
+    background: white !important;
+    color: #1a1a1a !important;
+}
+
+/* Override all Gradio dark mode variables */
+.gradio-container,
+.dark {
+    --body-background-fill: white !important;
+    --background-fill-primary: white !important;
+    --background-fill-secondary: #f8f9fa !important;
+    --panel-background-fill: white !important;
+    --block-background-fill: white !important;
+    --body-text-color: #1a1a1a !important;
+    --block-label-text-color: #1a1a1a !important;
+    --block-title-text-color: #1a1a1a !important;
+    --text-color-subdued: #666666 !important;
+    --border-color-primary: #e0e0e0 !important;
+    --block-border-color: #e0e0e0 !important;
+    --color-accent: #0066cc !important;
+    --color-accent-soft: #e6f2ff !important;
 }
 
 /* Style the main title */
-h2 {
-    color: var(--aei-dark) !important;
-    border-bottom: 3px solid var(--aei-blue);
-    padding-bottom: 10px;
+h2, .markdown h2 {
+    color: #1a1a1a !important;
+    border-bottom: 3px solid #0066cc !important;
+    padding-bottom: 10px !important;
+}
+
+/* All text elements */
+p, span, div, label, .prose, .markdown {
+    color: #1a1a1a !important;
 }
 
 /* Primary buttons with AEI blue */
+button.primary,
 .primary {
-    background-color: var(--aei-blue) !important;
-    border-color: var(--aei-blue) !important;
+    background-color: #0066cc !important;
+    border-color: #0066cc !important;
+    color: white !important;
 }
 
+button.primary:hover,
 .primary:hover {
     background-color: #0052a3 !important;
     border-color: #0052a3 !important;
 }
 
 /* Secondary buttons with AEI red */
+button.secondary,
 .secondary {
-    background-color: var(--aei-red) !important;
-    border-color: var(--aei-red) !important;
+    background-color: #c41e3a !important;
+    border-color: #c41e3a !important;
     color: white !important;
 }
 
+button.secondary:hover,
 .secondary:hover {
     background-color: #a01729 !important;
     border-color: #a01729 !important;
 }
 
-/* Textbox focus states */
-.textbox:focus, .textarea:focus {
-    border-color: var(--aei-blue) !important;
+/* Input elements */
+input, textarea, .textbox, .textarea {
+    background-color: white !important;
+    color: #1a1a1a !important;
+    border-color: #e0e0e0 !important;
+}
+
+input:focus, textarea:focus, .textbox:focus, .textarea:focus {
+    border-color: #0066cc !important;
     box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1) !important;
 }
 
 /* Slider styling */
 input[type="range"]::-webkit-slider-thumb {
-    background-color: var(--aei-blue) !important;
+    background-color: #0066cc !important;
 }
 
 input[type="range"]::-moz-range-thumb {
-    background-color: var(--aei-blue) !important;
+    background-color: #0066cc !important;
 }
 
 /* Dropdown styling */
-#compact_lang_selector {
-    border-color: var(--aei-blue) !important;
-}
-
-/* Add AEI logo styling */
-.aei-logo {
-    width: 60px;
-    height: 60px;
-    margin-right: 15px;
+select, .dropdown, #compact_lang_selector {
+    background-color: white !important;
+    color: #1a1a1a !important;
+    border-color: #0066cc !important;
 }
 
 /* Header styling */
 .main-header {
-    display: flex;
-    align-items: center;
-    margin-bottom: 20px;
-    padding: 20px;
-    background: linear-gradient(to right, rgba(196, 30, 58, 0.05), rgba(0, 102, 204, 0.05));
-    border-radius: 10px;
+    background: linear-gradient(to right, rgba(196, 30, 58, 0.05), rgba(0, 102, 204, 0.05)) !important;
+    border-radius: 10px !important;
+    padding: 20px !important;
+    margin-bottom: 20px !important;
+}
+
+/* Logo styling */
+.aei-logo-container {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 10px !important;
+    background: transparent !important;
+}
+
+.aei-logo-container svg {
+    max-width: 100% !important;
+    height: auto !important;
+}
+
+/* Fix image container */
+.image-container {
+    background: transparent !important;
+    border: none !important;
+}
+
+/* Chatbot styling */
+.message, .bot, .user {
+    background-color: white !important;
+    color: #1a1a1a !important;
+}
+
+/* Code blocks */
+pre, code {
+    background-color: #f8f9fa !important;
+    color: #1a1a1a !important;
+}
+
+/* Remove all dark backgrounds */
+[class*="dark:"] {
+    background-color: white !important;
+}
+
+/* Force all panels to be white */
+.panel {
+    background-color: white !important;
+}
+
+/* Tab styling */
+.tabs {
+    background-color: white !important;
+}
+
+.tab-selected {
+    background-color: #0066cc !important;
+    color: white !important;
 }

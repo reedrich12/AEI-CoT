@@ -181,13 +181,11 @@ class ConvoState:
         editor_output = current_content
 
         try:
-
-            # Initial waiting state update
+            # Initial waiting state update - use gr.update to preserve component
             if dynamic_state.waiting_api:
                 status = lang_data["waiting_api"]
                 editor_label = f"{lang_data['editor_label']} - {status}"
-                # Yield plain text to prevent component recreation
-                yield full_response, editor_label, self.flatten_output()
+                yield gr.update(value=full_response, label=editor_label), self.flatten_output()
 
             coordinator = CoordinationManager(self.sync_threshold, current_content)
             messages = [
@@ -208,73 +206,89 @@ class ConvoState:
                 temperature=AppConfig.TEMPERATURE,
                 max_tokens=AppConfig.MAX_TOKENS,
             )
+            
+            # Buffer for accumulating chunks to reduce update frequency
+            chunk_buffer = ""
+            update_interval = 0.1  # Update every 100ms
+            last_update_time = time.time()
+            
             for chunk in response_stream:
-                print(f"DEBUG: Received chunk: {chunk}")
-                chunk_content = ""
-                if hasattr(chunk.choices[0].delta, "reasoning_content") and chunk.choices[0].delta.reasoning_content:
-                        chunk_content = chunk.choices[0].delta.reasoning_content
-                        self.is_seperate_reasoning = True
-                        self.in_seperate_reasoning = True
-
-                elif chunk.choices[0].delta.content:
-                        chunk_content = chunk.choices[0].delta.content
-                        if self.in_seperate_reasoning:
-                            chunk_content ="</think>" + chunk_content
-                        self.in_seperate_reasoning = False
-                if (
-                    coordinator.should_pause_for_human(full_response)
-                    and dynamic_state.in_cot
-                ):
-                    dynamic_state.should_stream = False
                 if not dynamic_state.should_stream:
                     break
+                    
+                chunk_content = ""
+                if hasattr(chunk.choices[0].delta, "reasoning_content") and chunk.choices[0].delta.reasoning_content:
+                    chunk_content = chunk.choices[0].delta.reasoning_content
+                    self.is_seperate_reasoning = True
+                    self.in_seperate_reasoning = True
+                elif chunk.choices[0].delta.content:
+                    chunk_content = chunk.choices[0].delta.content
+                    if self.in_seperate_reasoning:
+                        chunk_content = "</think>" + chunk_content
+                    self.in_seperate_reasoning = False
 
                 if chunk_content:
                     dynamic_state.waiting_api = False
-                    full_response += chunk_content.replace("<think>", "")
-                    self.current["raw"] = full_response
+                    chunk_buffer += chunk_content.replace("<think>", "")
                     
-                    # Update Convo State
-                    think_complete = "</think>" in full_response
-                    dynamic_state.in_cot = not think_complete
-                    if think_complete:
-                        self.current["cot"], self.current["result"] = (
-                            full_response.split("</think>")
+                    # Update UI at intervals or when buffer is large
+                    current_time = time.time()
+                    if (current_time - last_update_time >= update_interval) or len(chunk_buffer) > 100:
+                        full_response += chunk_buffer
+                        self.current["raw"] = full_response
+                        chunk_buffer = ""
+                        last_update_time = current_time
+                        
+                        # Update Convo State
+                        think_complete = "</think>" in full_response
+                        dynamic_state.in_cot = not think_complete
+                        if think_complete:
+                            self.current["cot"], self.current["result"] = full_response.split("</think>")
+                        else:
+                            self.current["cot"], self.current["result"] = full_response, ""
+                        
+                        # Check if should pause
+                        if coordinator.should_pause_for_human(full_response) and dynamic_state.in_cot:
+                            dynamic_state.should_stream = False
+                        
+                        status = (
+                            lang_data["loading_thinking"]
+                            if dynamic_state.in_cot
+                            else lang_data["loading_output"]
                         )
-                    else:
-                        self.current["cot"], self.current["result"] = (
-                            full_response,
-                            "",
-                        )
-                    status = (
-                        lang_data["loading_thinking"]
-                        if dynamic_state.in_cot
-                        else lang_data["loading_output"]
-                    )
-                    editor_label = f"{lang_data['editor_label']} - {status}"
-                    if self.result_editing_toggle:
-                        editor_output = full_response
-                    else:
-                        editor_output = self.current["cot"] + (
-                            "</think>" if think_complete else ""
-                        )
-                    
-                    # Yield immediately for real-time updates
-                    if AppConfig.STREAM_OUTPUT:
-                        print(f"DEBUG: Yielding {len(editor_output)} chars - First 100 chars: {editor_output[:100]}")
-                        sys.stdout.flush()  # Force immediate output
-                    # Yield plain text instead of gr.update to prevent component recreation
-                    yield editor_output, editor_label, self.flatten_output()
-
-                    # Temporarily disable throughput control to fix streaming
-                    # interval = 1.0 / self.throughput
-                    # start_time = time.time()
-                    # while (
-                    #     (time.time() - start_time) < interval
-                    #     and dynamic_state.should_stream
-                    #     and dynamic_state.in_cot
-                    # ):
-                    #     time.sleep(0.005)
+                        editor_label = f"{lang_data['editor_label']} - {status}"
+                        
+                        if self.result_editing_toggle:
+                            editor_output = full_response
+                        else:
+                            editor_output = self.current["cot"] + ("</think>" if think_complete else "")
+                        
+                        # Use gr.update to preserve component and update both value and label
+                        yield gr.update(value=editor_output, label=editor_label), self.flatten_output()
+                        
+                        # Apply throughput control if enabled
+                        if self.throughput < 50 and dynamic_state.in_cot:
+                            time.sleep(1.0 / self.throughput)
+            
+            # Final update with any remaining buffer
+            if chunk_buffer and dynamic_state.should_stream:
+                full_response += chunk_buffer
+                self.current["raw"] = full_response
+                
+                think_complete = "</think>" in full_response
+                if think_complete:
+                    self.current["cot"], self.current["result"] = full_response.split("</think>")
+                else:
+                    self.current["cot"], self.current["result"] = full_response, ""
+                
+                if self.result_editing_toggle:
+                    editor_output = full_response
+                else:
+                    editor_output = self.current["cot"] + ("</think>" if think_complete else "")
+                
+                status = lang_data["loading_thinking"] if dynamic_state.in_cot else lang_data["loading_output"]
+                editor_label = f"{lang_data['editor_label']} - {status}"
+                yield gr.update(value=editor_output, label=editor_label), self.flatten_output()
 
         except Exception as e:
             if str(e) == "list index out of range":
@@ -284,7 +298,6 @@ class ConvoState:
                     error_msg = lang_data["api_interrupted"]
                 else:
                     error_msg = "❓ " + str(e)
-                # full_response += f"\n\n[{error_msg}: {str(e)}]"
                 editor_label_error = f"{lang_data['editor_label']} - {error_msg}"
                 self.is_error = True
                 dynamic_state.label_passthrough = True
@@ -300,11 +313,9 @@ class ConvoState:
             )
             editor_label = f"{lang_data['editor_label']} - {final_status}"
             if not self.is_error:
-                # Yield plain text to prevent component recreation
-                yield editor_output, editor_label, self.flatten_output()
+                yield gr.update(value=editor_output, label=editor_label), self.flatten_output()
             else:
-                # Yield plain text with error label
-                yield editor_output, editor_label_error, self.flatten_output() + [
+                yield gr.update(value=editor_output, label=editor_label_error), self.flatten_output() + [
                     {
                         "role": "assistant",
                         "content": error_msg,
@@ -475,11 +486,11 @@ with gr.Blocks(theme=theme, css_paths="styles.css", title="AEI CoT-Lab") as demo
     )
 
     def wrap_stream_generator(convo_state_obj, dynamic_state_obj, prompt, content):
-        for editor_output, editor_label, chatbot_messages in convo_state_obj.generate_ai_response(
+        for thought_editor_update, chatbot_messages in convo_state_obj.generate_ai_response(
             prompt, content, dynamic_state_obj
         ):
-            # Yield plain text for thought_editor to prevent component recreation
-            yield editor_output, chatbot_messages, {
+            # Yield the gr.update object directly for thought_editor
+            yield thought_editor_update, chatbot_messages, {
                 "prompt_input": convo_state_obj.current["user"],
                 "thought_editor": convo_state_obj.current["cot"],
             }
@@ -577,5 +588,5 @@ with gr.Blocks(theme=theme, css_paths="styles.css", title="AEI CoT-Lab") as demo
 
 if __name__ == "__main__":
     # Enable streaming with queue
-    demo.queue()
+    demo.queue(max_size=50, api_open=False)
     demo.launch(server_name="127.0.0.1", server_port=7860, share=False)

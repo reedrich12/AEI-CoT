@@ -12,6 +12,36 @@ footer {
     display: none !important;
 }
 
+/* CRITICAL: Override Gradio's pulse animation at the root */
+@keyframes pulse {
+    from, to { opacity: 1 !important; }
+}
+
+@keyframes pulseAlt {
+    from, to { opacity: 1 !important; }
+}
+
+@keyframes blink {
+    from, to { opacity: 1 !important; }
+}
+
+/* Disable Tailwind animations */
+.animate-pulse {
+    animation: none !important;
+}
+
+.animate-spin {
+    animation: none !important;
+}
+
+.animate-ping {
+    animation: none !important;
+}
+
+.animate-bounce {
+    animation: none !important;
+}
+
 /* Force white background on everything */
 body, 
 .gradio-container,
@@ -40,7 +70,7 @@ main,
     --border-color-primary: #e0e0e0 !important;
     --block-border-color: #e0e0e0 !important;
     --color-accent: #0066cc !important;
-    --color-accent-soft: #e6f2ff !important;
+    --color-accent-soft: #f0f7ff !important;
 }
 
 /* Style the main title */
@@ -53,6 +83,26 @@ h2, .markdown h2 {
 /* All text elements */
 p, span, div, label, .prose, .markdown {
     color: #1a1a1a !important;
+}
+
+/* Force all text to be black, including during generation */
+* {
+    color: #1a1a1a !important;
+}
+
+/* Except for buttons which should keep white text */
+button.primary, button.secondary, .primary, .secondary {
+    color: white !important;
+}
+
+/* Disable ALL transitions and animations globally during generation */
+.generating *,
+.streaming *,
+*[class*="generating"],
+*[class*="streaming"] {
+    transition: none !important;
+    animation: none !important;
+    opacity: 1 !important;
 }
 
 /* Primary buttons with AEI blue */
@@ -90,6 +140,19 @@ input, textarea, .textbox, .textarea {
     border-color: #e0e0e0 !important;
 }
 
+/* Textbox content during generation */
+.textbox textarea, .textarea textarea {
+    color: #1a1a1a !important;
+}
+
+/* Gradio textbox labels */
+.textbox label, .textarea label {
+    color: #1a1a1a !important;
+    background-color: #f8fbff !important;
+    padding: 6px 10px !important;
+    border-radius: 4px !important;
+}
+
 input:focus, textarea:focus, .textbox:focus, .textarea:focus {
     border-color: #0066cc !important;
     box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1) !important;
@@ -102,6 +165,22 @@ input[type="range"]::-webkit-slider-thumb {
 
 input[type="range"]::-moz-range-thumb {
     background-color: #0066cc !important;
+}
+
+/* Slider labels and info boxes - fade blue background */
+.slider-container label,
+.block label,
+.label-wrap {
+    background-color: #f5f9ff !important;
+    color: #1a1a1a !important;
+    padding: 8px 12px !important;
+    border-radius: 6px !important;
+}
+
+/* Info text under sliders */
+.info, .block-info {
+    color: #1a1a1a !important;
+    opacity: 0.9 !important;
 }
 
 /* Dropdown styling */
@@ -117,6 +196,8 @@ select, .dropdown, #compact_lang_selector {
     border-radius: 10px !important;
     padding: 20px !important;
     margin-bottom: 20px !important;
+    position: relative !important;
+    z-index: 10 !important;
 }
 
 /* Logo styling */
@@ -125,12 +206,19 @@ select, .dropdown, #compact_lang_selector {
     align-items: center !important;
     justify-content: center !important;
     padding: 10px !important;
-    background: transparent !important;
+    background: white !important;
+    border-radius: 8px !important;
 }
 
 .aei-logo-container svg {
     max-width: 100% !important;
     height: auto !important;
+    display: block !important;
+}
+
+/* Ensure SVG paths are visible */
+.aei-logo-container svg path {
+    fill-opacity: 1 !important;
 }
 
 /* Fix image container */
@@ -169,4 +257,207 @@ pre, code {
 .tab-selected {
     background-color: #0066cc !important;
     color: white !important;
+}
+
+/* Gradio specific overrides for better readability */
+.gr-box {
+    background-color: #fafbfc !important;
+    border-color: #e5e7eb !important;
+}
+
+/* Gradio form elements */
+.gr-form {
+    background-color: transparent !important;
+}
+
+/* All Gradio text should be black */
+.gr-text-input, .gr-textarea, .gr-markdown, .gr-chatbot {
+    color: #1a1a1a !important;
+}
+
+/* Streaming text in textboxes */
+.streaming .textbox textarea,
+.streaming .textarea textarea {
+    color: #1a1a1a !important;
+}
+
+/* Label backgrounds - very light blue */
+.label-wrap {
+    background-color: #f8fbff !important;
+}
+
+/* Override any gradio theme colors for text */
+.gradio-container * {
+    --tw-text-opacity: 1 !important;
+}
+
+/* Specific override for slider containers */
+.gr-input-label,
+.gr-slider label {
+    background-color: #f5f9ff !important;
+    color: #1a1a1a !important;
+    font-weight: 600 !important;
+}
+
+/* Remove all animations and transitions during text generation */
+.generating,
+.streaming,
+.pending {
+    animation: none !important;
+    opacity: 1 !important;
+}
+
+/* Disable pulsing/fading animations */
+@keyframes pulse {
+    0%, 100% { opacity: 1 !important; }
+}
+
+@keyframes fade {
+    0%, 100% { opacity: 1 !important; }
+}
+
+/* Force stable text during generation */
+.textbox.streaming textarea,
+.textarea.streaming textarea,
+.gr-textbox.streaming textarea {
+    opacity: 1 !important;
+    animation: none !important;
+    color: #1a1a1a !important;
+}
+
+/* Remove Gradio's default streaming animations */
+.dark .generating,
+.generating {
+    animation: none !important;
+}
+
+/* Ensure no opacity changes during updates */
+.gr-box.generating,
+.gr-textbox.generating,
+.generating * {
+    opacity: 1 !important;
+    transition: none !important;
+}
+
+/* Override any animated text */
+[class*="animate-"],
+[class*="animation-"] {
+    animation: none !important;
+    animation-duration: 0s !important;
+    opacity: 1 !important;
+}
+
+/* AGGRESSIVE FIX for pulsing text */
+* {
+    animation: none !important;
+    animation-delay: 0s !important;
+    animation-duration: 0s !important;
+    animation-iteration-count: 1 !important;
+    animation-fill-mode: none !important;
+    -webkit-animation: none !important;
+    -moz-animation: none !important;
+    -o-animation: none !important;
+    -ms-animation: none !important;
+}
+
+/* Target Gradio's specific textarea and text elements */
+textarea,
+.gr-text-input textarea,
+.gr-textarea textarea,
+.textbox textarea,
+.textarea textarea,
+#editor,
+#editor textarea {
+    opacity: 1 !important;
+    visibility: visible !important;
+    animation: none !important;
+    transition: none !important;
+    -webkit-animation: none !important;
+    -moz-animation: none !important;
+    color: #1a1a1a !important;
+}
+
+/* Force thought editor to be visible and properly sized */
+#editor {
+    background-color: white !important;
+    min-height: 300px !important;
+    z-index: 9999 !important;
+    position: relative !important;
+    display: block !important;
+}
+
+#editor textarea {
+    background-color: white !important;
+    color: #1a1a1a !important;
+    z-index: 10000 !important;
+    position: relative !important;
+    min-height: 280px !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Override Gradio's blinking cursor and text animations */
+.blinking-cursor::after,
+.cursor::after {
+    animation: none !important;
+    opacity: 1 !important;
+}
+
+/* Force visibility on all text content */
+.gr-prose,
+.prose,
+.gr-text,
+.text,
+.gr-box,
+.textbox,
+.textarea {
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+/* Disable any CSS-based text effects */
+* {
+    text-rendering: optimizeLegibility !important;
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
+}
+
+/* Override any inline styles that might be applied via JavaScript */
+[style*="opacity"],
+[style*="animation"] {
+    opacity: 1 !important;
+    animation: none !important;
+}
+
+/* Fix potential white overlay issue during streaming */
+.wrap, .wrapper, .container {
+    background: transparent !important;
+    z-index: auto !important;
+}
+
+/* Ensure thought editor is never hidden by overlays */
+.textbox:has(#editor),
+.gr-textbox:has(#editor),
+div:has(> #editor) {
+    z-index: 9998 !important;
+    position: relative !important;
+    background: transparent !important;
+}
+
+/* Force all parent containers to not hide content */
+#editor,
+#editor * {
+    overflow: visible !important;
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+}
+
+/* Ensure streaming content is visible */
+.streaming #editor,
+.generating #editor,
+#editor.streaming,
+#editor.generating {
+    background-color: white !important;
+    color: #1a1a1a !important;
 }

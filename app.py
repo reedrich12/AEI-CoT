@@ -1,17 +1,20 @@
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
+import sys
 import threading
 import time
 import gradio as gr
 from lang import LANGUAGE_CONFIG
 
-# 环境变量预校验
+# Force Python unbuffering for real-time streaming
+os.environ['PYTHONUNBUFFERED'] = '1'
+sys.stdout = sys.__stdout__
+sys.stderr = sys.__stderr__
+
+# Environment variable validation
 load_dotenv(override=True)
 required_env_vars = ["API_KEY", "API_URL", "API_MODEL"]
-secondary_api_exists = all(
-    os.getenv(f"{var}_2") for var in ["API_KEY", "API_URL", "API_MODEL"]
-)
 missing_vars = [var for var in required_env_vars if not os.getenv(var)]
 if missing_vars:
     raise EnvironmentError(
@@ -22,25 +25,28 @@ if missing_vars:
 class AppConfig:
     DEFAULT_THROUGHPUT = 10
     SYNC_THRESHOLD_DEFAULT = 0
-    API_TIMEOUT = 20
+    API_TIMEOUT = int(os.getenv("TIMEOUT_SECONDS", 120))
+    STREAM_OUTPUT = os.getenv("STREAM_OUTPUT", "true").lower() == "true"
+    MAX_TOKENS = int(os.getenv("MAX_TOKENS", 4096))
+    TEMPERATURE = float(os.getenv("TEMPERATURE", 0.6))
 
 
 class DynamicState:
-    """动态UI状态"""
+    """Dynamic UI state"""
 
     def __init__(self):
         self.should_stream = False
         self.stream_completed = False
         self.in_cot = True
-        self.current_language = "en"
-        self.waiting_api = False  # 新增等待状态标志
+        # English-only interface
+        self.waiting_api = False  # Added waiting state flag
         self.label_passthrough = False
 
     def control_button_handler(self):
         original_state = self.should_stream
         self.should_stream = not self.should_stream
 
-        # 当从暂停->生成时激活等待状态
+        # Activate waiting state when switching from pause to generate
         if not original_state and self.should_stream:
             self.waiting_api = True
             self.stream_completed = False
@@ -48,14 +54,14 @@ class DynamicState:
         return self.ui_state_controller()
 
     def ui_state_controller(self):
-        """生成动态UI组件状态"""
+        """Generate dynamic UI component states"""
         # [control_button, thought_editor, reset_button]
-        lang_data = LANGUAGE_CONFIG[self.current_language]
+        lang_data = LANGUAGE_CONFIG["en"]
         control_value = (
             lang_data["pause_btn"] if self.should_stream else lang_data["generate_btn"]
         )
         control_variant = "secondary" if self.should_stream else "primary"
-        # 处理等待状态显示
+        # Handle waiting state display
         if self.waiting_api and self.should_stream:
             status_suffix = lang_data["waiting_api"]
         elif self.waiting_api and not self.should_stream:
@@ -76,7 +82,7 @@ class DynamicState:
         return output
 
     def reset_workspace(self):
-        """重置工作区状态"""
+        """Reset workspace state"""
         self.stream_completed = False
         self.should_stream = False
         self.in_cot = True
@@ -91,7 +97,7 @@ class DynamicState:
 
 
 class CoordinationManager:
-    """管理人类与AI的协同节奏"""
+    """Manage human-AI coordination rhythm"""
 
     def __init__(self, paragraph_threshold, initial_content):
         self.paragraph_threshold = paragraph_threshold
@@ -118,7 +124,7 @@ class ConvoState:
     def __init__(self):
         self.throughput = AppConfig.DEFAULT_THROUGHPUT
         self.sync_threshold = AppConfig.SYNC_THRESHOLD_DEFAULT
-        self.current_language = "en"
+        # English-only interface
         self.convo = []
         self.initialize_new_round()
         self.is_error = False
@@ -127,11 +133,11 @@ class ConvoState:
         self.in_seperate_reasoning = False
 
     def get_api_config(self, language):
-        suffix = "_2" if language == "zh" and secondary_api_exists else ""
+        # Always use primary API since we're English-only now
         return {
-            "key": os.getenv(f"API_KEY{suffix}"),
-            "url": os.getenv(f"API_URL{suffix}"),
-            "model": os.getenv(f"API_MODEL{suffix}"),
+            "key": os.getenv("API_KEY"),
+            "url": os.getenv("API_URL"),
+            "model": os.getenv("API_MODEL"),
         }
 
     def initialize_new_round(self):
@@ -159,11 +165,11 @@ class ConvoState:
         return output
 
     def generate_ai_response(self, user_prompt, current_content, dynamic_state):
-        lang_data = LANGUAGE_CONFIG[self.current_language]
+        lang_data = LANGUAGE_CONFIG["en"]
         dynamic_state.stream_completed = False
         full_response = current_content
         self.current["raw"] = full_response
-        api_config = self.get_api_config(self.current_language)
+        api_config = self.get_api_config("en")
         api_client = OpenAI(
             api_key=api_config["key"],
             base_url=api_config["url"],
@@ -176,13 +182,12 @@ class ConvoState:
 
         try:
 
-            # 初始等待状态更新
+            # Initial waiting state update
             if dynamic_state.waiting_api:
                 status = lang_data["waiting_api"]
                 editor_label = f"{lang_data['editor_label']} - {status}"
-                yield full_response, gr.update(
-                    label=editor_label
-                ), self.flatten_output()
+                # Yield plain text to prevent component recreation
+                yield full_response, editor_label, self.flatten_output()
 
             coordinator = CoordinationManager(self.sync_threshold, current_content)
             messages = [
@@ -200,10 +205,11 @@ class ConvoState:
                 stream=True,
                 timeout=AppConfig.API_TIMEOUT,
                 top_p=0.95,
-                temperature=0.6,
+                temperature=AppConfig.TEMPERATURE,
+                max_tokens=AppConfig.MAX_TOKENS,
             )
             for chunk in response_stream:
-                print(chunk)
+                print(f"DEBUG: Received chunk: {chunk}")
                 chunk_content = ""
                 if hasattr(chunk.choices[0].delta, "reasoning_content") and chunk.choices[0].delta.reasoning_content:
                         chunk_content = chunk.choices[0].delta.reasoning_content
@@ -227,6 +233,7 @@ class ConvoState:
                     dynamic_state.waiting_api = False
                     full_response += chunk_content.replace("<think>", "")
                     self.current["raw"] = full_response
+                    
                     # Update Convo State
                     think_complete = "</think>" in full_response
                     dynamic_state.in_cot = not think_complete
@@ -251,18 +258,23 @@ class ConvoState:
                         editor_output = self.current["cot"] + (
                             "</think>" if think_complete else ""
                         )
-                    yield editor_output, gr.update(
-                        label=editor_label
-                    ), self.flatten_output()
+                    
+                    # Yield immediately for real-time updates
+                    if AppConfig.STREAM_OUTPUT:
+                        print(f"DEBUG: Yielding {len(editor_output)} chars - First 100 chars: {editor_output[:100]}")
+                        sys.stdout.flush()  # Force immediate output
+                    # Yield plain text instead of gr.update to prevent component recreation
+                    yield editor_output, editor_label, self.flatten_output()
 
-                    interval = 1.0 / self.throughput
-                    start_time = time.time()
-                    while (
-                        (time.time() - start_time) < interval
-                        and dynamic_state.should_stream
-                        and dynamic_state.in_cot
-                    ):
-                        time.sleep(0.005)
+                    # Temporarily disable throughput control to fix streaming
+                    # interval = 1.0 / self.throughput
+                    # start_time = time.time()
+                    # while (
+                    #     (time.time() - start_time) < interval
+                    #     and dynamic_state.should_stream
+                    #     and dynamic_state.in_cot
+                    # ):
+                    #     time.sleep(0.005)
 
         except Exception as e:
             if str(e) == "list index out of range":
@@ -288,13 +300,11 @@ class ConvoState:
             )
             editor_label = f"{lang_data['editor_label']} - {final_status}"
             if not self.is_error:
-                yield editor_output, gr.update(
-                    label=editor_label
-                ), self.flatten_output()
+                # Yield plain text to prevent component recreation
+                yield editor_output, editor_label, self.flatten_output()
             else:
-                yield editor_output, gr.update(
-                    label=editor_label_error
-                ), self.flatten_output() + [
+                # Yield plain text with error label
+                yield editor_output, editor_label_error, self.flatten_output() + [
                     {
                         "role": "assistant",
                         "content": error_msg,
@@ -304,58 +314,7 @@ class ConvoState:
             self.is_error = False
 
 
-def update_interface_language(selected_lang, convo_state, dynamic_state):
-    """更新界面语言配置"""
-    convo_state.current_language = selected_lang
-    dynamic_state.current_language = selected_lang
-    lang_data = LANGUAGE_CONFIG[selected_lang]
-    base_editor_label = lang_data["editor_label"]
-    status_suffix = (
-        lang_data["completed"]
-        if dynamic_state.stream_completed
-        else lang_data["interrupted"]
-    )
-    editor_label = f"{base_editor_label} - {status_suffix}"
-    api_config = convo_state.get_api_config(selected_lang)
-    new_bot_content = [
-        {
-            "role": "assistant",
-            "content": f"🔧 System: Running `{api_config['model']}` @ {api_config['url']}",
-            "metadata": {"title": f"AEI System Info"},
-        }
-    ]
-    return [
-        gr.update(value=f"{lang_data['title']}"),
-        gr.update(
-            label=lang_data["prompt_label"], placeholder=lang_data["prompt_placeholder"]
-        ),
-        gr.update(label=editor_label, placeholder=lang_data["editor_placeholder"]),
-        gr.update(
-            label=lang_data["sync_threshold_label"],
-            info=lang_data["sync_threshold_info"],
-        ),
-        gr.update(
-            label=lang_data["throughput_label"], info=lang_data["throughput_info"]
-        ),
-        gr.update(
-            value=(
-                lang_data["pause_btn"]
-                if dynamic_state.should_stream
-                else lang_data["generate_btn"]
-            ),
-            variant="secondary" if dynamic_state.should_stream else "primary",
-        ),
-        gr.update(label=lang_data["language_label"]),
-        gr.update(
-            value=lang_data["clear_btn"], interactive=not dynamic_state.should_stream
-        ),
-        gr.update(value=lang_data["introduction"]),
-        gr.update(
-            value=lang_data["bot_default"] + new_bot_content,
-            label=lang_data["bot_label"],
-        ),
-        gr.update(label=lang_data["result_editing_toggle"]),
-    ]
+# Language update function removed - English only interface
 
 
 theme = gr.themes.Soft(
@@ -399,8 +358,8 @@ theme = gr.themes.Soft(
 
 with gr.Blocks(theme=theme, css_paths="styles.css", title="AEI CoT-Lab") as demo:
     DEFAULT_PERSISTENT = {"prompt_input": "", "thought_editor": ""}
-    convo_state = gr.State(ConvoState)
-    dynamic_state = gr.State(DynamicState)
+    convo_state = gr.State(ConvoState())
+    dynamic_state = gr.State(DynamicState())
     persistent_state = gr.BrowserState(DEFAULT_PERSISTENT)
 
     bot_default = LANGUAGE_CONFIG["en"]["bot_default"] + [
@@ -410,21 +369,14 @@ with gr.Blocks(theme=theme, css_paths="styles.css", title="AEI CoT-Lab") as demo
             "metadata": {"title": f"AEI System Info"},
         }
     ]
-    if secondary_api_exists:
-        bot_default.append(
-            {
-                "role": "assistant",
-                "content": f"Switch to Chinese (zh) for alternative API: `{os.getenv('API_MODEL_2')}`",
-                "metadata": {"title": f"Language Options"},
-            }
-        )
+    # No secondary API or language switching - English only
     
     # Add AEI logo and header
     with gr.Row(elem_classes="main-header"):
         with gr.Column(scale=0):
             gr.HTML("""
-                <div class="aei-logo-container">
-                    <svg width="200" viewBox="0 0 560 113" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <div class="aei-logo-container" style="width: 300px; padding: 10px;">
+                    <svg viewBox="0 0 560 113" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto;">
                         <path d="M33.035 56h-5.453l-2.788-8.303H8.684L5.833 56H.441l12.95-37.178h6.693L33.035 56Zm-9.852-13.074-6.444-18.9-6.445 18.9h12.889ZM71.292 56h-4.957V26.444l-9.729 19.952H53.26l-9.604-19.953V56h-5.02V18.822h6.445l9.914 20.262 9.976-20.262h6.32V56Zm31.658 0H80.147V18.822h22.803v4.833H85.228v11.34h16.731v4.833h-16.73v11.339h17.721V56Zm36.728 0h-5.514l-8.737-15.49h-8.551V56h-5.081V18.822h17.473c1.426 0 3.037.496 4.152 1.301.868.62 2.788 2.54 3.284 3.284a6.54 6.54 0 0 1 1.053 3.532v5.577c0 1.24-.371 2.416-1.053 3.47-.496.743-2.416 2.664-3.284 3.284-.744.558-1.921 1.053-2.788 1.115L139.678 56Zm-7.002-23.608v-5.329c0-.124 0-.62-.062-.681-.371-.682-2.168-2.665-3.036-2.727h-12.702v12.021h12.331c1.115 0 2.974-1.735 3.407-2.602.062-.124.062-.558.062-.682ZM152.455 56h-5.081V18.822h5.081V56Zm34.926-7.931c-.434 1.115-1.053 2.354-1.735 3.222-1.797 2.23-4.399 5.019-7.622 5.019h-8.179c-1.177 0-2.602-.496-3.594-1.054-1.239-.743-3.717-3.222-4.461-4.337-.682-.991-.929-2.169-.929-3.284V27.187c0-1.115.247-2.23.929-3.222.744-1.053 3.222-3.656 4.461-4.4.992-.557 2.355-1.053 3.532-1.053h8.241c3.223 0 5.887 2.727 7.622 5.02.496.619.991 1.548 1.735 3.16l-4.957 1.424c-.682-1.982-2.665-3.841-4.09-4.709 0 0-.248-.062-.495-.062h-7.746a1.24 1.24 0 0 0-.558.124c-.867.434-2.664 2.107-3.408 3.346-.123.186-.123.496-.123.806v19.952c0 1.053 2.54 3.284 3.531 3.78.124.062.31.124.558.124h7.746c.247 0 .495-.062.619-.124 1.363-.744 3.284-2.665 3.966-4.586l4.957 1.302ZM224.25 56h-5.453l-2.788-8.303h-16.111L197.048 56h-5.391l12.951-37.178h6.692L224.25 56Zm-9.852-13.074-6.444-18.9-6.445 18.9h12.889ZM256.372 56h-5.886l-15.615-28.38V56h-5.019V18.822h6.01l15.491 28.689V18.822h5.019V56Zm46.083 0h-22.802V18.822h22.802v4.833h-17.721v11.34h16.73v4.833h-16.73v11.339h17.721V56Zm34.807-8.613c0 1.115-.185 2.23-.867 3.222-.744 1.115-3.222 3.594-4.461 4.338-.992.557-2.355 1.053-3.532 1.053H311.3V18.822h17.102c1.115 0 2.54.372 3.532.991 1.239.744 3.717 3.408 4.461 4.462.682.991.867 2.107.867 3.222v19.89Zm-5.081-.124V27.621c0-.248 0-.372-.061-.496-.62-1.301-2.665-2.974-3.594-3.408-.124-.062-.186-.062-.434-.062h-11.711v27.512h11.711c.248 0 .372-.062.434-.062.991-.496 3.655-2.788 3.655-3.842Zm39.872.434c0 1.115-.185 2.23-.867 3.222-.744 1.115-3.222 3.594-4.461 4.337-.992.558-2.355 1.054-3.532 1.054h-8.303c-1.178 0-2.603-.496-3.594-1.054-1.24-.743-3.718-3.222-4.462-4.337-.681-.991-.929-2.107-.929-3.222V18.822h5.081v28.751c0 .93 2.788 3.346 3.718 3.78a.96.96 0 0 0 .495.124h7.684c.248 0 .434-.062.558-.124.929-.434 3.531-2.913 3.531-3.78V18.822h5.081v28.875Zm34.62.372c-.434 1.115-1.053 2.354-1.735 3.222-1.797 2.23-4.399 5.019-7.621 5.019h-8.18c-1.177 0-2.602-.496-3.593-1.054-1.24-.743-3.718-3.222-4.462-4.337-.681-.991-.929-2.169-.929-3.284V27.187c0-1.115.248-2.23.929-3.222.744-1.053 3.222-3.656 4.462-4.4.991-.557 2.354-1.053 3.531-1.053h8.242c3.222 0 5.886 2.727 7.621 5.02.496.619.991 1.548 1.735 3.16l-4.957 1.424c-.682-1.982-2.664-3.841-4.09-4.709 0 0-.247-.062-.495-.062h-7.746c-.248 0-.433.062-.557.124-.868.434-2.665 2.107-3.408 3.346-.124.186-.124.496-.124.806v19.952c0 1.053 2.54 3.284 3.532 3.78.124.062.309.124.557.124h7.746c.248 0 .495-.062.619-.124 1.364-.744 3.284-2.665 3.966-4.586l4.957 1.302ZM443.542 56h-5.453l-2.788-8.303h-16.11L416.34 56h-5.391L423.9 18.822h6.692L443.542 56Zm-9.852-13.074-6.444-18.9-6.444 18.9h12.888Zm35.991-19.27h-10.596V56h-5.081V23.655h-10.596v-4.833h26.273v4.833ZM481.696 56h-5.081V18.822h5.081V56Zm36.165-8.365c0 1.115-.248 2.293-.93 3.284-.743 1.115-3.222 3.594-4.461 4.337-.991.558-2.416 1.054-3.594 1.054h-9.79c-1.177 0-2.54-.496-3.532-1.054-1.239-.743-3.78-3.222-4.523-4.337-.682-.991-.868-2.23-.868-3.284V27.249c0-1.053.186-2.293.868-3.284.743-1.115 3.284-3.656 4.523-4.4.992-.557 2.355-1.053 3.532-1.053h9.79c1.178 0 2.603.496 3.594 1.054 1.239.743 3.718 3.346 4.461 4.399.682.991.93 2.169.93 3.284v20.386Zm-5.081-.062v-20.2c0-.248-.062-.434-.124-.558-.682-1.239-2.541-2.912-3.408-3.346a1.24 1.24 0 0 0-.558-.124h-9.294a1.24 1.24 0 0 0-.558.124c-.991.496-3.594 2.85-3.594 3.904v20.2c0 .93 2.665 3.346 3.594 3.78.124.062.31.124.558.124h9.294c.248 0 .434-.062.558-.124.991-.496 3.532-2.727 3.532-3.78ZM552.876 56h-5.886l-15.615-28.38V56h-5.019V18.822h6.011l15.49 28.689V18.822h5.019V56ZM309.56 112h-5.081V74.822h5.081V112Zm35.297 0h-5.886l-15.615-28.38V112h-5.019V74.822h6.01l15.491 28.689V74.822h5.019V112Zm36.267-8.365c0 1.053-.186 2.293-.868 3.284-.743 1.115-3.284 3.594-4.523 4.337-.991.558-2.355 1.054-3.532 1.054h-10.348c-3.284 0-5.948-2.727-7.683-5.019-.496-.682-.93-1.611-1.673-3.222l4.895-1.302.557 1.116c.806 1.425 2.603 2.974 3.532 3.47.248.124.434.124.558.124h9.914c.186 0 .372-.062.496-.124.991-.496 3.594-2.727 3.594-3.78v-3.78c0-.991-.682-1.92-1.425-2.107l-16.854-4.337c-2.851-.743-4.4-3.594-4.4-6.32v-3.78c0-1.053.186-2.293.868-3.284.743-1.115 3.284-3.656 4.523-4.4.991-.557 2.355-1.053 3.532-1.053h9.109c3.222 0 5.886 2.727 7.621 5.02.496.619.991 1.548 1.735 3.16l-4.957 1.425-.62-1.24c-.681-1.363-2.602-2.974-3.532-3.47 0 0-.185-.062-.433-.062h-8.613c-.248 0-.372.062-.558.124-.929.434-3.594 2.85-3.594 3.78v3.532c0 .93.62 1.797 1.363 1.983l16.792 4.461c2.789.744 4.524 3.47 4.524 6.197v4.213Zm32.178-23.98h-10.596V112h-5.081V79.655H387.03v-4.833h26.272v4.833ZM425.317 112h-5.081V74.822h5.081V112Zm33.005-32.345h-10.595V112h-5.081V79.655H432.05v-4.833h26.272v4.833Zm32.835 24.042c0 1.115-.186 2.231-.867 3.222-.744 1.115-3.222 3.594-4.462 4.337-.991.558-2.354 1.054-3.532 1.054h-8.303c-1.177 0-2.602-.496-3.594-1.054-1.239-.743-3.717-3.222-4.461-4.337-.682-.991-.929-2.107-.929-3.222V74.822h5.081v28.751c0 .929 2.788 3.346 3.717 3.78a.96.96 0 0 0 .496.124h7.684c.247 0 .433-.062.557-.124.93-.434 3.532-2.912 3.532-3.78V74.822h5.081v28.875Zm32.699-24.042H513.26V112h-5.081V79.655h-10.596v-4.833h26.273v4.833ZM553.654 112h-22.802V74.822h22.802v4.833h-17.721v11.34h16.73v4.833h-16.73v11.339h17.721V112Z" fill="#070A1D"/>
                         <path fill="#CC000F" d="M64 76h223v12H64zm-12 0H40v12h12z"/>
                         <path fill="#1C5F9D" d="M101 100h186v12H101zm-12 0H77v12h12z"/>
@@ -436,13 +388,7 @@ with gr.Blocks(theme=theme, css_paths="styles.css", title="AEI CoT-Lab") as demo
                 f"{LANGUAGE_CONFIG['en']['title']}",
                 container=False,
             )
-        with gr.Column(scale=0):
-            lang_selector = gr.Dropdown(
-                choices=["en", "zh"],
-                value="en",
-                elem_id="compact_lang_selector",
-                container=False,
-            )
+        # Language selector removed - English only
 
     with gr.Row(equal_height=True):
         with gr.Column(scale=1, min_width=400):
@@ -511,7 +457,7 @@ with gr.Blocks(theme=theme, css_paths="styles.css", title="AEI CoT-Lab") as demo
         else:
             return gr.update(), gr.update()
 
-    # 交互逻辑
+    # Interaction logic
     stateful_ui = (control_button, thought_editor, next_turn_btn)
 
     throughput_control.change(
@@ -528,39 +474,86 @@ with gr.Blocks(theme=theme, css_paths="styles.css", title="AEI CoT-Lab") as demo
         concurrency_limit=None,
     )
 
-    def wrap_stream_generator(convo_state, dynamic_state, prompt, content):
-        for response in convo_state.generate_ai_response(
-            prompt, content, dynamic_state
+    def wrap_stream_generator(convo_state_obj, dynamic_state_obj, prompt, content):
+        for editor_output, editor_label, chatbot_messages in convo_state_obj.generate_ai_response(
+            prompt, content, dynamic_state_obj
         ):
-            yield response + (
-                {
-                    "prompt_input": convo_state.current["user"],
-                    "thought_editor": convo_state.current["cot"],
-                },
-            )
+            # Yield plain text for thought_editor to prevent component recreation
+            yield editor_output, chatbot_messages, {
+                "prompt_input": convo_state_obj.current["user"],
+                "thought_editor": convo_state_obj.current["cot"],
+            }
 
-    gr.on(
-        [control_button.click, prompt_input.submit, thought_editor.submit],
-        lambda d: d.control_button_handler(),
+    def handle_control_button(dynamic_state_obj):
+        return dynamic_state_obj.control_button_handler()
+    
+    def handle_ui_state(dynamic_state_obj):
+        return dynamic_state_obj.ui_state_controller()
+    
+    # Use streaming with proper configuration
+    control_button.click(
+        handle_control_button,
         [dynamic_state],
         stateful_ui,
         show_progress=False,
-        concurrency_limit=None,
+        queue=False,
     ).then(
         wrap_stream_generator,
         [convo_state, dynamic_state, prompt_input, thought_editor],
-        [thought_editor, thought_editor, chatbot, persistent_state],
-        concurrency_limit=1000,
+        [thought_editor, chatbot, persistent_state],
+        show_progress=False,
     ).then(
-        lambda d: d.ui_state_controller(),
+        handle_ui_state,
         [dynamic_state],
         stateful_ui,
         show_progress=False,
-        concurrency_limit=None,
+        queue=False,
+    )
+    
+    # Add submit handlers
+    prompt_input.submit(
+        handle_control_button,
+        [dynamic_state],
+        stateful_ui,
+        show_progress=False,
+        queue=False,
+    ).then(
+        wrap_stream_generator,
+        [convo_state, dynamic_state, prompt_input, thought_editor],
+        [thought_editor, chatbot, persistent_state],
+        show_progress=False,
+    ).then(
+        handle_ui_state,
+        [dynamic_state],
+        stateful_ui,
+        show_progress=False,
+        queue=False,
+    )
+    
+    thought_editor.submit(
+        handle_control_button,
+        [dynamic_state],
+        stateful_ui,
+        show_progress=False,
+        queue=False,
+    ).then(
+        wrap_stream_generator,
+        [convo_state, dynamic_state, prompt_input, thought_editor],
+        [thought_editor, chatbot, persistent_state],
+        show_progress=False,
+    ).then(
+        handle_ui_state,
+        [dynamic_state],
+        stateful_ui,
+        show_progress=False,
+        queue=False,
     )
 
+    def handle_reset(dynamic_state_obj):
+        return dynamic_state_obj.reset_workspace()
+    
     next_turn_btn.click(
-        lambda d: d.reset_workspace(),
+        handle_reset,
         [dynamic_state],
         stateful_ui + (thought_editor, prompt_input, chatbot, persistent_state),
         concurrency_limit=None,
@@ -580,25 +573,9 @@ with gr.Blocks(theme=theme, css_paths="styles.css", title="AEI CoT-Lab") as demo
         outputs=[thought_editor],
     )
 
-    lang_selector.change(
-        lambda lang, s, d: update_interface_language(lang, s, d),
-        [lang_selector, convo_state, dynamic_state],
-        [
-            title_md,
-            prompt_input,
-            thought_editor,
-            sync_threshold_slider,
-            throughput_control,
-            control_button,
-            lang_selector,
-            next_turn_btn,
-            intro_md,
-            chatbot,
-            result_editing_toggle,
-        ],
-        concurrency_limit=None,
-    )
+    # Language selector removed - English only interface
 
 if __name__ == "__main__":
-    demo.queue(default_concurrency_limit=1000)
-    demo.launch()
+    # Enable streaming with queue
+    demo.queue()
+    demo.launch(server_name="127.0.0.1", server_port=7860, share=False)
